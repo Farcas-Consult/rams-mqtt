@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.7">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ZebraIoTConnector.Services\ZebraIoTConnector.Services.csproj" />
+    <ProjectReference Include="..\ZebraIoTConnector.Persistence\ZebraIoTConnector.Persistence.csproj" />
+    <ProjectReference Include="..\ZebraIoTConnector.DomainModel\ZebraIoTConnector.DomainModel.csproj" />
+    <ProjectReference Include="..\ZebraIoTConnector.FXReaderInterface\ZebraIoTConnector.FXReaderInterface.csproj" />
+    <ProjectReference Include="..\ZebraIoTConnector.Client.MQTT.Console\ZebraIoTConnector.Client.MQTT.Console.csproj" />
+  </ItemGroup>
+
+</Project>
+

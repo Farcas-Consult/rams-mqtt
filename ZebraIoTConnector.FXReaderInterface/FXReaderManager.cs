@@ -41,7 +41,8 @@ namespace ZebraIoTConnector.FXReaderInterface
 
         public void TagDataEventReceived(string clientId, List<TagReadEvent> tagReadEvent)
         {
-            materialMovementService.NewTagReaded(clientId, tagReadEvent);
+            // Fire-and-forget async operation (interface requires void return type)
+            _ = Task.Run(async () => await materialMovementService.NewTagReaded(clientId, tagReadEvent));
         }
         public void GPInStatusChanged()
         {

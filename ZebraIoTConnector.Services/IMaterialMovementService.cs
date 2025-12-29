@@ -4,6 +4,6 @@ namespace ZebraIoTConnector.Services
 {
     public interface IMaterialMovementService
     {
-        public void NewTagReaded(string clientId, List<TagReadEvent> tagReadEvent);
+        public Task NewTagReaded(string clientId, List<TagReadEvent> tagReadEvent);
     }
 }

@@ -12,14 +12,22 @@ namespace ZebraIoTConnector.Services
     {
         private readonly ILogger<MaterialMovementService> logger;
         private readonly IUnitOfWork unitOfWork;
+        private readonly ITagReadNotifier? tagReadNotifier;
 
         public MaterialMovementService(ILogger<MaterialMovementService> logger, IUnitOfWork unitOfWork)
+            : this(logger, unitOfWork, null)
+        {
+        }
+
+        // Public constructor for dependency injection with notifier
+        public MaterialMovementService(ILogger<MaterialMovementService> logger, IUnitOfWork unitOfWork, ITagReadNotifier? tagReadNotifier)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            this.tagReadNotifier = tagReadNotifier;
         }
 
-        public void NewTagReaded(string clientId, List<TagReadEvent> tagReadEvent)
+        public async Task NewTagReaded(string clientId, List<TagReadEvent> tagReadEvent)
         {
             if (tagReadEvent == null || tagReadEvent.Count == 0)
                 return;
@@ -64,7 +72,6 @@ namespace ZebraIoTConnector.Services
                     if (asset == null)
                     {
                         logger.LogWarning($"Unregistered tag: {tag.IdHex} at gate {gate.Name}");
-                        // Optionally: Push to SignalR for unregistered tag alert
                         continue;
                     }
 
@@ -94,6 +101,30 @@ namespace ZebraIoTConnector.Services
                     unitOfWork.AssetMovementRepository.Add(movement);
 
                     logger.LogInformation($"Asset {asset.AssetNumber} ({asset.Name}) detected at gate {gate.Name}");
+
+                    // Send SignalR message if notifier is available
+                    if (tagReadNotifier != null)
+                    {
+                        try
+                        {
+                            var message = new
+                            {
+                                TagId = tag.IdHex,
+                                AssetNumber = asset.AssetNumber,
+                                AssetName = asset.Name,
+                                Gate = gate.Name,
+                                Location = gate.Location?.Name,
+                                Timestamp = DateTime.UtcNow,
+                                Plant = asset.Plant
+                            };
+                            
+                            await tagReadNotifier.NotifyTagReadAsync(message);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogWarning(ex, "Failed to call notifier for tag read");
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
