@@ -21,5 +21,6 @@ namespace ZebraIoTConnector.Persistence
         public void BeginTransaction();
         public void CommitTransaction();
         public void RollbackTransaction();
+        public int SaveChanges();
     }
 }

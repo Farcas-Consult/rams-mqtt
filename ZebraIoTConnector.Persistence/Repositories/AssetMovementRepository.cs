@@ -81,6 +81,14 @@ namespace ZebraIoTConnector.Persistence.Repositories
             zebraDbContext.SaveChanges();
         }
 
+        public void Add(AssetMovement movement)
+        {
+            if (movement == null)
+                throw new ArgumentNullException(nameof(movement));
+
+            zebraDbContext.AssetMovements.Add(movement);
+        }
+
         public List<AssetMovement> GetMovementHistory(DateTime from, DateTime to, int? assetId, int? gateId)
         {
             var query = zebraDbContext.AssetMovements

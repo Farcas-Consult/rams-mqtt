@@ -20,6 +20,9 @@ namespace ZebraIoTConnector.Client.MQTT.Console
             services.AddDbContext<ZebraDbContext>();
             services.AddScoped<IEquipmentRegistryService, EquipmentRegistryService>();
             services.AddScoped<IMaterialMovementService, MaterialMovementService>();
+            services.AddScoped<IAssetManagementService, AssetManagementService>();
+            services.AddScoped<IGateManagementService, GateManagementService>();
+            services.AddScoped<IReportingService, ReportingService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             // Managers

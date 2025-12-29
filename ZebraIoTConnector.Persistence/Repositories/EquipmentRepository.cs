@@ -65,5 +65,25 @@ namespace ZebraIoTConnector.Persistence.Repositories
                 RefStorageUnitDirection = eq.ReferenceStorageUnit?.Direction
             };
         }
+
+        public Equipment? GetEquipmentEntityByName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return null;
+
+            return zebraDbContext.Equipments
+                .Include(x => x.ReferenceStorageUnit)
+                .Include(x => x.Gate)
+                    .ThenInclude(g => g.Location)
+                .SingleOrDefault(x => x.Name == name);
+        }
+
+        public Equipment? GetEquipmentById(int id)
+        {
+            return zebraDbContext.Equipments
+                .Include(x => x.ReferenceStorageUnit)
+                .Include(x => x.Gate)
+                .FirstOrDefault(x => x.Id == id);
+        }
     }
 }

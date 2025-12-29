@@ -2,12 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ZebraIoTConnector.DomainModel.Enums;
 using ZebraIoTConnector.DomainModel.Reader;
 using ZebraIoTConnector.Persistence;
-using ZebraIoTConnector.Persistence.Repositories;
+using ZebraIoTConnector.Persistence.Entities;
 
 namespace ZebraIoTConnector.Services
 {
@@ -21,59 +18,99 @@ namespace ZebraIoTConnector.Services
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
+
         public void NewTagReaded(string clientId, List<TagReadEvent> tagReadEvent)
         {
-            // Retrieve equipment by name (clientId).
-            var reader = unitOfWork.EquipmentRepository.GetEquipmentByName(clientId);
+            if (tagReadEvent == null || tagReadEvent.Count == 0)
+                return;
 
-            if(reader == null)
+            // Get reader entity with Gate navigation
+            var reader = unitOfWork.EquipmentRepository.GetEquipmentEntityByName(clientId);
+            
+            if (reader == null)
             {
-                // reader not registered yet, tag read message received before the hearbeat
-                logger.LogWarning($"Reader {clientId} not registered yet, tag read message received before the hearbeat");
+                logger.LogWarning($"Reader {clientId} not registered yet, tag read message received before the heartbeat");
                 return;
             }
 
-            if (string.IsNullOrEmpty(reader.RefStorageUnitName))
+            var gate = reader.Gate;
+            
+            if (gate == null)
             {
-                // DO NOTHING
-                // Storage Unit is not configured for this reader
-                logger.LogWarning($"Storage Unit has to be configured manually so that reader '{clientId}' can be used");
+                logger.LogWarning($"Reader {clientId} is not assigned to a gate");
                 return;
             }
 
-            // Retrieve sublots associated to readed epcs or create them.
-            var sublots = unitOfWork.SublotRepository.GetOrCreateSublotByIdentifier(reader.RefStorageUnitName, tagReadEvent.Select(x => x.IdHex).ToArray());
-            
-            // Check direction of Equipment storage unit
-            // Move sublots either on WH or Truck upon Storage Unit direction.
+            if (!gate.IsActive)
+            {
+                logger.LogWarning($"Gate {gate.Name} is not active");
+                return;
+            }
 
-            var destinationStorageUnit = reader.RefStorageUnitName;
-            if (reader.RefStorageUnitDirection == Direction.Outbound)
-                destinationStorageUnit = "TRUCK"; // Added for testing purposes on model creating
+            if (gate.Location == null)
+            {
+                logger.LogWarning($"Gate {gate.Name} does not have a location configured");
+                return;
+            }
 
-            
-            // Persists data within transaction.
-            unitOfWork.BeginTransaction();
+            // Process each tag
+            foreach (var tag in tagReadEvent)
+            {
+                try
+                {
+                    // Look up asset by tag identifier (DON'T AUTO-CREATE!)
+                    var asset = unitOfWork.AssetRepository.GetByTagIdentifier(tag.IdHex);
+                    
+                    if (asset == null)
+                    {
+                        logger.LogWarning($"Unregistered tag: {tag.IdHex} at gate {gate.Name}");
+                        // Optionally: Push to SignalR for unregistered tag alert
+                        continue;
+                    }
 
+                    // Store previous location before updating
+                    var previousLocation = asset.CurrentLocation;
+                    var previousLocationId = asset.CurrentLocationId;
+
+                    // Update asset tracking fields
+                    asset.LastDiscoveredAt = DateTime.UtcNow;
+                    asset.LastDiscoveredBy = gate.Name;
+                    asset.CurrentLocationId = gate.Location.Id;
+                    asset.UpdatedAt = DateTime.UtcNow;
+
+                    // Record movement
+                    var movement = new AssetMovement
+                    {
+                        Asset = asset,
+                        AssetId = asset.Id,
+                        FromLocationId = previousLocationId,
+                        ToLocationId = gate.Location.Id,
+                        GateId = gate.Id,
+                        ReaderId = reader.Id,
+                        ReaderIdString = clientId,
+                        ReadTimestamp = DateTime.UtcNow
+                    };
+
+                    unitOfWork.AssetMovementRepository.Add(movement);
+
+                    logger.LogInformation($"Asset {asset.AssetNumber} ({asset.Name}) detected at gate {gate.Name}");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, $"Error processing tag {tag.IdHex} at gate {gate.Name}");
+                }
+            }
+
+            // Save all changes
             try
             {
-                // Create inventory order
-                unitOfWork.InventoryOperationRepository.AddInventoryOperation(sublots, destinationStorageUnit, reader);
-
-                // Move sublots in the proper storage unit
-                unitOfWork.SublotRepository.MoveSublots(sublots, destinationStorageUnit);
-
-                // Commit the transaction
-                unitOfWork.CommitTransaction();
-                foreach (var sublot in sublots)
-                    logger.LogInformation($"Sublot {sublot.Identifier} moved successfully to {destinationStorageUnit} - Readed from Equipment {reader}");
+                unitOfWork.SaveChanges();
             }
-            catch
+            catch (Exception ex)
             {
-                unitOfWork.RollbackTransaction();
+                logger.LogError(ex, $"Error saving asset movements for reader {clientId}");
                 throw;
             }
-
         }
     }
 }

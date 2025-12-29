@@ -58,6 +58,11 @@ namespace ZebraIoTConnector.Persistence
             zebraDbContext.Database.RollbackTransaction();
         }
 
+        public int SaveChanges()
+        {
+            return zebraDbContext.SaveChanges();
+        }
+
         public void Dispose()
         {
             zebraDbContext.Dispose();
