@@ -1,17 +1,25 @@
 version: '3.4'
 
 services:
-  zebraiotconnector.client.mqtt.console:
-    image: ${DOCKER_REGISTRY-}zebraiotconnectorclientmqttconsole
+  zebraiotconnector.backend.api:
+    image: ${DOCKER_REGISTRY-}zebraiotconnectorbackendapi
     build:
       context: .
-      dockerfile: ./ZebraIoTConnector.Client.MQTT.Console/Dockerfile
+      dockerfile: ./ZebraIoTConnector.Backend.API/Dockerfile
     # Shared Network
     networks:
       - mosquitto_go_net
     # Console output
-    stdin_open: true
-    tty: true
+    # stdin_open: true
+    # tty: true
+    ports:
+      - "5200:80"
+      - "5201:443"
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sql.data,1433;Database=ZebraRFID_DockDoor;MultipleActiveResultSets=true;User ID=sa;Password=Zebra2022!
+      - Mqtt__BrokerHost=mosquitto
     depends_on:
       sql.data:
         condition: service_started

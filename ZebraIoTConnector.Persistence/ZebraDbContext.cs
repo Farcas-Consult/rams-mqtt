@@ -5,9 +5,18 @@ namespace ZebraIoTConnector.Persistence
 {
     public class ZebraDbContext : DbContext
     {
+        public ZebraDbContext() { }
+
+        public ZebraDbContext(DbContextOptions<ZebraDbContext> options) : base(options)
+        {
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer("Server=sql.data,1433;Database=ZebraRFID_DockDoor;MultipleActiveResultSets=true;User ID=sa;Password=Zebra2022!");
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseSqlServer("Server=sql.data,1433;Database=ZebraRFID_DockDoor;MultipleActiveResultSets=true;User ID=sa;Password=Zebra2022!");
+            }
             base.OnConfiguring(optionsBuilder);
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)

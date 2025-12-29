@@ -34,7 +34,7 @@ namespace ZebraIoTConnector.Backend.API.Services
                 using (var scope = serviceProvider.CreateScope())
                 {
                     var subscriptionManager = scope.ServiceProvider.GetRequiredService<ISubscriptionManager>();
-                    var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
+                    var configurationManager = scope.ServiceProvider.GetRequiredService<ZebraIoTConnector.Client.MQTT.Console.Configuration.IConfigurationManager>();
 
                     // Subscribe to MQTT topics
                     subscriptionManager.Subscribe(topic);
@@ -53,8 +53,8 @@ namespace ZebraIoTConnector.Backend.API.Services
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error in MQTT Subscriber Background Service");
-                throw;
+                logger.LogWarning(ex, "Failed to connect to MQTT broker. The Web API will continue to run, but MQTT features (live feed, tag reading) will be unavailable. Ensure 'mosquitto' is running if you need these features.");
+                // Do not throw, so the rest of the app (API) stays alive.
             }
         }
 

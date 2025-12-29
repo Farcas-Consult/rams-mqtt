@@ -41,7 +41,7 @@ namespace ZebraIoTConnector.Backend.API
             services.AddScoped<IReportingService, ReportingService>();
 
             // Managers
-            services.AddScoped<IConfigurationManager, ZebraIoTConnector.Client.MQTT.Console.Configuration.ConfigurationManager>();
+            services.AddScoped<ZebraIoTConnector.Client.MQTT.Console.Configuration.IConfigurationManager, ZebraIoTConnector.Client.MQTT.Console.Configuration.ConfigurationManager>();
             services.AddScoped<IPublisherManager, PublisherManager>();
             services.AddScoped<ISubscriptionEventParser, SubscriptionEventParser>();
             
