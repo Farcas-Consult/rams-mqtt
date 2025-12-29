@@ -167,24 +167,30 @@ namespace ZebraIoTConnector.Services
 
         public AssetStatisticsDto GetAssetStatistics()
         {
-            var allAssets = unitOfWork.AssetRepository.GetAll().ToList();
-            var allGates = unitOfWork.GateRepository.GetAll();
+            // Use efficient database counting
+            var totalAssets = unitOfWork.AssetRepository.GetTotalCount();
+            var assetsWithTags = unitOfWork.AssetRepository.GetAssetsWithTagsCount();
+            var assetsWithoutTags = totalAssets - assetsWithTags;
+            var activeAssets = unitOfWork.AssetRepository.GetTotalCount(false); // Count non-deleted
             
-            // Get total movements count (approximate from recent movements)
-            // Note: This is a simple count. For exact count, we'd need a Count method in repository
-            var recentMovements = unitOfWork.AssetMovementRepository.GetRecent(10000);
-            var totalMovements = recentMovements.Count; // This is limited to recent 10000
+            var assetsNotSeen30 = unitOfWork.AssetRepository.GetAssetsNotSeenInDaysCount(30);
+            var assetsNotSeen90 = unitOfWork.AssetRepository.GetAssetsNotSeenInDaysCount(90);
+            
+            var totalGates = unitOfWork.GateRepository.GetTotalCount();
+            var activeGates = unitOfWork.GateRepository.GetActiveCount();
+            
+            var totalMovements = unitOfWork.AssetMovementRepository.GetTotalCount();
 
             var stats = new AssetStatisticsDto
             {
-                TotalAssets = allAssets.Count,
-                AssetsWithTags = allAssets.Count(a => !string.IsNullOrWhiteSpace(a.TagIdentifier)),
-                AssetsWithoutTags = allAssets.Count(a => string.IsNullOrWhiteSpace(a.TagIdentifier)),
-                ActiveAssets = allAssets.Count(a => !a.IsDeleted),
-                AssetsNotSeenIn30Days = unitOfWork.AssetRepository.GetAssetsNotSeenInDays(30).Count,
-                AssetsNotSeenIn90Days = unitOfWork.AssetRepository.GetAssetsNotSeenInDays(90).Count,
-                TotalGates = allGates.Count,
-                ActiveGates = allGates.Count(g => g.IsActive),
+                TotalAssets = totalAssets,
+                AssetsWithTags = assetsWithTags,
+                AssetsWithoutTags = assetsWithoutTags,
+                ActiveAssets = activeAssets,
+                AssetsNotSeenIn30Days = assetsNotSeen30,
+                AssetsNotSeenIn90Days = assetsNotSeen90,
+                TotalGates = totalGates,
+                ActiveGates = activeGates,
                 TotalMovements = totalMovements
             };
 

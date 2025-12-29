@@ -114,6 +114,23 @@ namespace ZebraIoTConnector.Persistence.Repositories
                 .Where(a => !a.IsDeleted && a.CurrentLocationId == locationId)
                 .ToList();
         }
+    public int GetTotalCount(bool includeDeleted = false)
+        {
+            if (includeDeleted)
+                return zebraDbContext.Assets.Count();
+            return zebraDbContext.Assets.Count(a => !a.IsDeleted);
+        }
+
+        public int GetAssetsWithTagsCount()
+        {
+            return zebraDbContext.Assets.Count(a => !a.IsDeleted && a.TagIdentifier != null && a.TagIdentifier != "");
+        }
+
+        public int GetAssetsNotSeenInDaysCount(int days)
+        {
+            var cutoffDate = DateTime.UtcNow.AddDays(-days);
+            return zebraDbContext.Assets.Count(a => !a.IsDeleted && (a.LastDiscoveredAt == null || a.LastDiscoveredAt < cutoffDate));
+        }
     }
 }
 

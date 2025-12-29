@@ -109,6 +109,10 @@ namespace ZebraIoTConnector.Persistence.Repositories
                 .OrderByDescending(m => m.ReadTimestamp)
                 .ToList();
         }
+        public int GetTotalCount()
+        {
+            return zebraDbContext.AssetMovements.Count();
+        }
     }
 }
 

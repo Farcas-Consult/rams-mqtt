@@ -17,6 +17,11 @@ namespace ZebraIoTConnector.Persistence.Repositories
         void BulkCreate(List<Asset> assets);
         List<Asset> GetAssetsNotSeenInDays(int days);
         List<Asset> GetAssetsByLocation(int locationId);
+        
+        // Count methods for reporting
+        int GetTotalCount(bool includeDeleted = false);
+        int GetAssetsWithTagsCount();
+        int GetAssetsNotSeenInDaysCount(int days);
     }
 }
 

@@ -14,6 +14,7 @@ namespace ZebraIoTConnector.Persistence.Repositories
         void Create(AssetMovement movement);
         void Add(AssetMovement movement);
         List<AssetMovement> GetMovementHistory(DateTime from, DateTime to, int? assetId, int? gateId);
+        int GetTotalCount();
     }
 }
 

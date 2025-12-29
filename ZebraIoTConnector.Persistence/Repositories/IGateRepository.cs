@@ -12,6 +12,8 @@ namespace ZebraIoTConnector.Persistence.Repositories
         void Create(Gate gate);
         void Update(Gate gate);
         void Delete(int id);
+        int GetTotalCount();
+        int GetActiveCount();
     }
 }
 

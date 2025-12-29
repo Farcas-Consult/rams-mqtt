@@ -80,6 +80,15 @@ namespace ZebraIoTConnector.Persistence.Repositories
                 zebraDbContext.SaveChanges();
             }
         }
+        public int GetTotalCount()
+        {
+            return zebraDbContext.Gates.Count();
+        }
+
+        public int GetActiveCount()
+        {
+            return zebraDbContext.Gates.Count(g => g.IsActive);
+        }
     }
 }
 
