@@ -16,5 +16,14 @@ namespace ZebraIoTConnector.Persistence.Entities
         public string Name { get; set; }
         public string Description { get; set; }
         public StorageUnit? ReferenceStorageUnit { get; set; }
+
+        // Asset tracking fields
+        public int? GateId { get; set; }
+        public bool IsMobile { get; set; } = false;
+        public DateTime? LastHeartbeat { get; set; }
+        public bool IsOnline { get; set; } = false;
+
+        // Navigation properties
+        public Gate? Gate { get; set; }
     }
 }

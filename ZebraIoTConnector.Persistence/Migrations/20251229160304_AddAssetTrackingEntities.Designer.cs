@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ZebraIoTConnector.Persistence;
 
@@ -11,9 +12,10 @@ using ZebraIoTConnector.Persistence;
 namespace ZebraIoTConnector.Persistence.Migrations
 {
     [DbContext(typeof(ZebraDbContext))]
-    partial class ZebraDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251229160304_AddAssetTrackingEntities")]
+    partial class AddAssetTrackingEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,7 +33,6 @@ namespace ZebraIoTConnector.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<decimal?>("AcquisitionValue")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("AssetGroup")

@@ -12,7 +12,6 @@ Specification for an RFID-based asset tracking system that tracks organizational
 - Integration with fixed RFID readers at gates and mobile handheld scanners
 
 ### 1.3 Key Requirements
-- Track asset ownership (who has it)
 - Track last discovery timestamp
 - Record gate movements (fixed and mobile)
 - Asset registration and tag assignment

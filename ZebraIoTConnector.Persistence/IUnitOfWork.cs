@@ -13,6 +13,11 @@ namespace ZebraIoTConnector.Persistence
         ISublotRepository SublotRepository { get; }
         IInventoryOperationRepository InventoryOperationRepository { get; }
 
+        // Asset tracking repositories
+        IAssetRepository AssetRepository { get; }
+        IGateRepository GateRepository { get; }
+        IAssetMovementRepository AssetMovementRepository { get; }
+
         public void BeginTransaction();
         public void CommitTransaction();
         public void RollbackTransaction();

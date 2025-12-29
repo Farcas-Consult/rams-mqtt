@@ -12,16 +12,31 @@ services:
     # Console output
     stdin_open: true
     tty: true
+    depends_on:
+      sql.data:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
   sql.data:
-    image: mcr.microsoft.com/mssql/server:2017-latest
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    platform: linux/amd64
     environment:
       - SA_PASSWORD=Zebra2022!
       - ACCEPT_EULA=Y
+      - MSSQL_PID=Developer
     ports:
       - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
     # Shared Network
     networks:
-        - mosquitto_go_net  
+        - mosquitto_go_net
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Zebra2022! -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s  
 
   mosquitto:
       image: eclipse-mosquitto:latest
@@ -38,7 +53,9 @@ services:
       # Make mosquitto reachable from outside (FX reader)
       hostname: "$host_name"
 
-
 networks:
   mosquitto_go_net:
     driver: bridge
+
+volumes:
+  sql_data:
