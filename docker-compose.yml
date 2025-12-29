@@ -13,8 +13,8 @@ services:
     # stdin_open: true
     # tty: true
     ports:
-      - "5200:80"
-      - "5201:443"
+      - "5001:80"
+      - "5002:443"
     environment:
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development

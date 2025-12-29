@@ -81,10 +81,15 @@ namespace ZebraIoTConnector.Backend.API.Controllers
                 logger.LogWarning(ex, "Invalid request to create gate");
                 return BadRequest(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                logger.LogWarning(ex, "Invalid operation while creating gate");
+                return BadRequest(ex.Message);
+            }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error creating gate");
-                return StatusCode(500, "An error occurred while creating the gate");
+                logger.LogError(ex, "Error creating gate: {Message}", ex.Message);
+                return StatusCode(500, $"An error occurred while creating the gate: {ex.Message}");
             }
         }
 

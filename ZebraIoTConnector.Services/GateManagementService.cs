@@ -42,7 +42,12 @@ namespace ZebraIoTConnector.Services
 
             unitOfWork.GateRepository.Create(gate);
 
-            return MapToDto(gate);
+            // Reload the gate with navigation properties to properly map to DTO
+            var createdGate = unitOfWork.GateRepository.GetById(gate.Id);
+            if (createdGate == null)
+                throw new InvalidOperationException("Failed to retrieve created gate");
+
+            return MapToDto(createdGate);
         }
 
         public GateDto UpdateGate(int id, UpdateGateDto dto)
@@ -143,7 +148,7 @@ namespace ZebraIoTConnector.Services
         private GateDto MapToDto(Gate gate)
         {
             if (gate == null)
-                return null;
+                throw new ArgumentNullException(nameof(gate));
 
             return new GateDto
             {
