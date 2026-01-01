@@ -58,6 +58,10 @@ namespace ZebraIoTConnector.Services
                 UserStatus = dto.UserStatus,
                 AcquisitionValue = dto.AcquisitionValue,
                 Comments = dto.Comments,
+                Manufacturer = dto.Manufacturer,
+                PurchaseDate = dto.PurchaseDate,
+                Category = dto.Category,
+                Location = dto.Location,
                 TagIdentifier = dto.TagIdentifier,
                 CurrentLocationId = dto.CurrentLocationId,
                 CreatedAt = DateTime.UtcNow,
@@ -102,6 +106,11 @@ namespace ZebraIoTConnector.Services
             asset.UserStatus = dto.UserStatus ?? asset.UserStatus;
             asset.AcquisitionValue = dto.AcquisitionValue ?? asset.AcquisitionValue;
             asset.Comments = dto.Comments ?? asset.Comments;
+
+            asset.Manufacturer = dto.Manufacturer ?? asset.Manufacturer;
+            asset.PurchaseDate = dto.PurchaseDate ?? asset.PurchaseDate;
+            asset.Category = dto.Category ?? asset.Category;
+            asset.Location = dto.Location ?? asset.Location;
             
             if (dto.TagIdentifier != null)
                 asset.TagIdentifier = dto.TagIdentifier;
@@ -319,6 +328,10 @@ namespace ZebraIoTConnector.Services
                         UserStatus = importDto.UserStatus,
                         AcquisitionValue = importDto.AcquistnValue,
                         Comments = importDto.Comment,
+                        Manufacturer = importDto.Manufacturer,
+                        PurchaseDate = importDto.PurchaseDate,
+                        Category = importDto.Category,
+                        Location = importDto.Location,
                         CreatedAt = DateTime.UtcNow,
                         IsDeleted = false
                     };
@@ -387,6 +400,10 @@ namespace ZebraIoTConnector.Services
                 UserStatus = asset.UserStatus,
                 AcquisitionValue = asset.AcquisitionValue,
                 Comments = asset.Comments,
+                Manufacturer = asset.Manufacturer,
+                PurchaseDate = asset.PurchaseDate,
+                Category = asset.Category,
+                Location = asset.Location,
                 TagIdentifier = asset.TagIdentifier,
                 LastDiscoveredAt = asset.LastDiscoveredAt,
                 LastDiscoveredBy = asset.LastDiscoveredBy,

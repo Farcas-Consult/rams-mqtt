@@ -35,6 +35,12 @@ namespace ZebraIoTConnector.Persistence.Entities
         public decimal? AcquisitionValue { get; set; }
         public string? Comments { get; set; }
 
+        // Expanded Import fields
+        public string? Manufacturer { get; set; }
+        public DateTime? PurchaseDate { get; set; }
+        public string? Category { get; set; }
+        public string? Location { get; set; } // Friendly location name
+
         // Tracking fields
         public string? TagIdentifier { get; set; }
         public DateTime? LastDiscoveredAt { get; set; }

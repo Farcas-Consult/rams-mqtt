@@ -18,6 +18,12 @@ namespace ZebraIoTConnector.DomainModel.Dto
         public string? UserStatus { get; set; }
         public decimal? AcquistnValue { get; set; } // Maps to AcquisitionValue
         public string? Comment { get; set; } // Maps to Comments
+
+        // Expanded fields
+        public string? Manufacturer { get; set; }
+        public DateTime? PurchaseDate { get; set; }
+        public string? Category { get; set; }
+        public string? Location { get; set; }
     }
 }
 

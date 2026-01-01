@@ -20,6 +20,11 @@ namespace ZebraIoTConnector.DomainModel.Dto
         public decimal? AcquisitionValue { get; set; }
         public string? Comments { get; set; }
 
+        public string? Manufacturer { get; set; }
+        public DateTime? PurchaseDate { get; set; }
+        public string? Category { get; set; }
+        public string? Location { get; set; }
+
         // Tracking fields
         public string? TagIdentifier { get; set; }
         public int? CurrentLocationId { get; set; }

@@ -172,6 +172,7 @@ namespace ZebraIoTConnector.Services
             var assetsWithTags = unitOfWork.AssetRepository.GetAssetsWithTagsCount();
             var assetsWithoutTags = totalAssets - assetsWithTags;
             var activeAssets = unitOfWork.AssetRepository.GetTotalCount(false); // Count non-deleted
+            var decommissionedAssets = totalAssets - activeAssets; // Or explicit count of deleted
             
             var assetsNotSeen30 = unitOfWork.AssetRepository.GetAssetsNotSeenInDaysCount(30);
             var assetsNotSeen90 = unitOfWork.AssetRepository.GetAssetsNotSeenInDaysCount(90);
@@ -187,6 +188,7 @@ namespace ZebraIoTConnector.Services
                 AssetsWithTags = assetsWithTags,
                 AssetsWithoutTags = assetsWithoutTags,
                 ActiveAssets = activeAssets,
+                DecommissionedAssets = decommissionedAssets,
                 AssetsNotSeenIn30Days = assetsNotSeen30,
                 AssetsNotSeenIn90Days = assetsNotSeen90,
                 TotalGates = totalGates,

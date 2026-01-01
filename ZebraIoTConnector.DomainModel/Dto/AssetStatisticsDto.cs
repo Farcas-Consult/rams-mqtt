@@ -6,6 +6,7 @@ namespace ZebraIoTConnector.DomainModel.Dto
         public int AssetsWithTags { get; set; }
         public int AssetsWithoutTags { get; set; }
         public int ActiveAssets { get; set; }
+        public int DecommissionedAssets { get; set; }
         public int AssetsNotSeenIn30Days { get; set; }
         public int AssetsNotSeenIn90Days { get; set; }
         public int TotalGates { get; set; }
