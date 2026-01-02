@@ -105,6 +105,11 @@ namespace ZebraIoTConnector.Backend.API.Controllers
                 logger.LogWarning(ex, "Invalid request to create asset");
                 return BadRequest(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                logger.LogWarning(ex, "Business rule violation creating asset");
+                return Conflict(ex.Message);
+            }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error creating asset");
@@ -119,6 +124,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
         [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public ActionResult<AssetDto> UpdateAsset(int id, [FromBody] UpdateAssetDto dto)
         {
             try
@@ -133,6 +139,11 @@ namespace ZebraIoTConnector.Backend.API.Controllers
             {
                 logger.LogWarning(ex, $"Invalid request to update asset {id}");
                 return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.LogWarning(ex, $"Business rule violation updating asset {id}");
+                return Conflict(ex.Message);
             }
             catch (KeyNotFoundException)
             {
@@ -176,6 +187,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
         [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public ActionResult<AssetDto> AssignTag(int id, [FromBody] AssignTagRequest request)
         {
             try
@@ -192,6 +204,11 @@ namespace ZebraIoTConnector.Backend.API.Controllers
                 logger.LogWarning(ex, $"Invalid request to assign tag to asset {id}");
                 return BadRequest(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                logger.LogWarning(ex, $"Business rule violation assigning tag to asset {id}");
+                return Conflict(ex.Message);
+            }
             catch (KeyNotFoundException)
             {
                 return NotFound();
@@ -201,6 +218,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
                 logger.LogError(ex, $"Error assigning tag to asset {id}");
                 return StatusCode(500, "An error occurred while assigning the tag");
             }
+
         }
 
         /// <summary>

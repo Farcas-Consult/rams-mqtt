@@ -41,6 +41,20 @@ namespace ZebraIoTConnector.Services
                 IsActive = dto.IsActive
             };
 
+            // Auto-assign LocationId from Site if missing
+            if (!gate.LocationId.HasValue && gate.SiteId.HasValue)
+            {
+                var site = unitOfWork.SiteRepository.GetById(gate.SiteId.Value);
+                if (site != null)
+                {
+                    var storageUnit = unitOfWork.StorageUnitRepository.GetByName(site.Name);
+                    if (storageUnit != null)
+                    {
+                        gate.LocationId = storageUnit.Id;
+                    }
+                }
+            }
+
             unitOfWork.GateRepository.Create(gate);
 
             // Reload the gate with navigation properties to properly map to DTO

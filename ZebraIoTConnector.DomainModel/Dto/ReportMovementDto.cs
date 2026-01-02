@@ -8,5 +8,6 @@ namespace ZebraIoTConnector.DomainModel.Dto
         public int GateId { get; set; }
         public string DeviceId { get; set; }
         public DateTime Timestamp { get; set; }
+        public ZebraIoTConnector.DomainModel.Enums.Direction Direction { get; set; }
     }
 }

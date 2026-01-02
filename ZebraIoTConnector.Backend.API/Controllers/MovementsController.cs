@@ -76,6 +76,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
         [HttpPost("report")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult ReportMovement([FromBody] ReportMovementDto dto)
         {
             try
@@ -90,6 +91,16 @@ namespace ZebraIoTConnector.Backend.API.Controllers
             {
                 logger.LogWarning(ex, "Invalid request to report movement");
                 return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                logger.LogWarning(ex, "Asset or Gate not found");
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.LogWarning(ex, "Business rule violation reporting movement");
+                return Conflict(ex.Message);
             }
             catch (Exception ex)
             {

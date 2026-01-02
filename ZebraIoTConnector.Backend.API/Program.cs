@@ -24,6 +24,17 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// Add CORS configuration
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowClientApp",
+        builder => builder
+            .WithOrigins("http://localhost:3000") // Frontend URL
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()); // Required for SignalR
+});
+
 var app = builder.Build();
 
 // Run database migrations
@@ -40,6 +51,9 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "An error occurred while migrating the database.");
     }
 }
+
+// Enable CORS
+app.UseCors("AllowClientApp");
 
 // Configure the HTTP request pipeline
 // Configure the HTTP request pipeline

@@ -114,6 +114,19 @@ namespace ZebraIoTConnector.Backend.API.Controllers
 
                 unitOfWork.SiteRepository.Create(site);
 
+                // Auto-create corresponding Inventory Location (StorageUnit) if it doesn't exist
+                var existingStorageUnit = unitOfWork.StorageUnitRepository.GetByName(dto.Name);
+                if (existingStorageUnit == null)
+                {
+                    var storageUnit = new StorageUnit
+                    {
+                        Name = dto.Name,
+                        Description = $"Auto-created location for site {dto.Name}",
+                        Direction = DomainModel.Enums.Direction.None
+                    };
+                    unitOfWork.StorageUnitRepository.Create(storageUnit);
+                }
+
                 // Fetch again to ensure ID and relationships
                 var created = unitOfWork.SiteRepository.GetById(site.Id);
                 return CreatedAtAction(nameof(GetById), new { id = site.Id }, MapToDto(created));

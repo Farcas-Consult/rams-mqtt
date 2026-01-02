@@ -18,6 +18,7 @@ namespace ZebraIoTConnector.Persistence
         IGateRepository GateRepository { get; }
         IAssetMovementRepository AssetMovementRepository { get; }
         ISiteRepository SiteRepository { get; }
+        IStorageUnitRepository StorageUnitRepository { get; }
 
         public void BeginTransaction();
         public void CommitTransaction();

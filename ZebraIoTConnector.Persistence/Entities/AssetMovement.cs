@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using ZebraIoTConnector.DomainModel.Enums;
 
 namespace ZebraIoTConnector.Persistence.Entities
 {
@@ -19,6 +20,7 @@ namespace ZebraIoTConnector.Persistence.Entities
         public int? ReaderId { get; set; }
         public string? ReaderIdString { get; set; }
         public DateTime ReadTimestamp { get; set; }
+        public ZebraIoTConnector.DomainModel.Enums.Direction Direction { get; set; }
 
         // Navigation properties
         public Asset Asset { get; set; }
