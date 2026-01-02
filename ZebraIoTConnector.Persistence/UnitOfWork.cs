@@ -16,9 +16,11 @@ namespace ZebraIoTConnector.Persistence
         private readonly InventoryOperationRepository inventoryOperationRepository;
 
         // Asset tracking repositories
+        // Asset tracking repositories
         private readonly AssetRepository assetRepository;
         private readonly GateRepository gateRepository;
         private readonly AssetMovementRepository assetMovementRepository;
+        private readonly SiteRepository siteRepository;
 
         public IEquipmentRepository EquipmentRepository => equipmentRepository;
         public ISublotRepository SublotRepository => sublotRepository;
@@ -28,6 +30,7 @@ namespace ZebraIoTConnector.Persistence
         public IAssetRepository AssetRepository => assetRepository;
         public IGateRepository GateRepository => gateRepository;
         public IAssetMovementRepository AssetMovementRepository => assetMovementRepository;
+        public ISiteRepository SiteRepository => siteRepository;
 
         public UnitOfWork(ZebraDbContext zebraDbContext)
         {
@@ -41,6 +44,7 @@ namespace ZebraIoTConnector.Persistence
             assetRepository = new AssetRepository(zebraDbContext);
             gateRepository = new GateRepository(zebraDbContext);
             assetMovementRepository = new AssetMovementRepository(zebraDbContext);
+            siteRepository = new SiteRepository(zebraDbContext);
         }
 
         public void BeginTransaction()

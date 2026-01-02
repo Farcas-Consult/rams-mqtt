@@ -12,15 +12,18 @@ namespace ZebraIoTConnector.Backend.API.Controllers
     {
         private readonly IReportingService reportingService;
         private readonly IUnitOfWork unitOfWork;
+        private readonly IAssetManagementService assetManagementService;
         private readonly ILogger<MovementsController> logger;
 
         public MovementsController(
             IReportingService reportingService,
             IUnitOfWork unitOfWork,
+            IAssetManagementService assetManagementService,
             ILogger<MovementsController> logger)
         {
             this.reportingService = reportingService ?? throw new ArgumentNullException(nameof(reportingService));
             this.unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            this.assetManagementService = assetManagementService ?? throw new ArgumentNullException(nameof(assetManagementService));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -64,6 +67,34 @@ namespace ZebraIoTConnector.Backend.API.Controllers
             {
                 logger.LogError(ex, $"Error retrieving movement {id}");
                 return StatusCode(500, "An error occurred while retrieving the movement");
+            }
+        }
+
+        /// <summary>
+        /// Report a movement from a mobile device (portable gate)
+        /// </summary>
+        [HttpPost("report")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult ReportMovement([FromBody] ReportMovementDto dto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                assetManagementService.ReportMovement(dto);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogWarning(ex, "Invalid request to report movement");
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error reporting movement");
+                return StatusCode(500, "An error occurred while reporting movement");
             }
         }
 

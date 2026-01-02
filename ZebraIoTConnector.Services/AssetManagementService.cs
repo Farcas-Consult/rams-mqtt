@@ -376,16 +376,88 @@ namespace ZebraIoTConnector.Services
             return result;
         }
 
+        public void ReportMovement(ReportMovementDto dto)
+        {
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
+
+            if (string.IsNullOrWhiteSpace(dto.TagId))
+                throw new ArgumentException("TagId is required", nameof(dto));
+
+            if (string.IsNullOrWhiteSpace(dto.DeviceId))
+                throw new ArgumentException("DeviceId is required", nameof(dto));
+
+            // 1. Get Asset
+            var asset = unitOfWork.AssetRepository.GetByTagIdentifier(dto.TagId);
+            if (asset == null)
+            {
+                logger.LogWarning($"Unregistered tag {dto.TagId} reported by mobile device {dto.DeviceId}");
+                // Optionally auto-create or just log
+                return;
+            }
+
+            // 2. Get Gate/Location
+            Gate gate = null;
+            if (dto.GateId > 0)
+            {
+                gate = unitOfWork.GateRepository.GetById(dto.GateId);
+                if (gate == null)
+                {
+                    logger.LogWarning($"Invalid GateId {dto.GateId} reported by mobile device {dto.DeviceId}");
+                    return; 
+                }
+
+                if (!gate.LocationId.HasValue)
+                {
+                    logger.LogWarning($"Gate {gate.Name} (Id: {gate.Id}) does not have a configured LocationId");
+                    throw new InvalidOperationException($"Gate {gate.Name} does not have a configured Location");
+                }
+            }
+
+            // 3. Update Asset
+            var previousLocationId = asset.CurrentLocationId;
+            asset.LastDiscoveredAt = dto.Timestamp;
+            asset.LastDiscoveredBy = $"Mobile: {dto.DeviceId}";
+            
+            if (gate != null && gate.LocationId.HasValue)
+            {
+                asset.CurrentLocationId = gate.LocationId;
+            }
+
+            asset.UpdatedAt = DateTime.UtcNow;
+
+            // 4. Record Movement
+            var movement = new AssetMovement
+            {
+                AssetId = asset.Id,
+                Asset = asset,
+                FromLocationId = previousLocationId,
+                ToLocationId = asset.CurrentLocationId ?? 0, // Fallback if no location
+                GateId = gate?.Id,
+                ReaderId = null, // No registered reader entity
+                ReaderIdString = dto.DeviceId,
+                ReadTimestamp = dto.Timestamp
+            };
+
+            unitOfWork.AssetMovementRepository.Add(movement);
+            unitOfWork.AssetRepository.Update(asset);
+            unitOfWork.SaveChanges();
+
+            logger.LogInformation($"Asset {asset.AssetNumber} reported at {(gate?.Name ?? "Unknown Gate")} by device {dto.DeviceId}");
+        }
+
         private AssetDto MapToDto(Asset asset)
         {
             if (asset == null)
                 return null;
-
+            
+            // ... existing mapping ...
             return new AssetDto
             {
                 Id = asset.Id,
                 AssetNumber = asset.AssetNumber,
                 Name = asset.Name,
+                // ... map all fields ...
                 Description = asset.Description,
                 MaterialId = asset.MaterialId,
                 SerialNumber = asset.SerialNumber,

@@ -19,6 +19,7 @@ namespace ZebraIoTConnector.Persistence.Repositories
         {
             return zebraDbContext.Gates
                 .Include(g => g.Location)
+                .Include(g => g.Site)
                 .Include(g => g.Readers)
                 .FirstOrDefault(g => g.Id == id);
         }
@@ -30,6 +31,7 @@ namespace ZebraIoTConnector.Persistence.Repositories
 
             return zebraDbContext.Gates
                 .Include(g => g.Location)
+                .Include(g => g.Site)
                 .Include(g => g.Readers)
                 .FirstOrDefault(g => g.Name == name);
         }
@@ -41,6 +43,7 @@ namespace ZebraIoTConnector.Persistence.Repositories
 
             return zebraDbContext.Gates
                 .Include(g => g.Location)
+                .Include(g => g.Site)
                 .Include(g => g.Readers)
                 .FirstOrDefault(g => g.Readers.Any(r => r.Name == readerName));
         }
@@ -49,6 +52,7 @@ namespace ZebraIoTConnector.Persistence.Repositories
         {
             return zebraDbContext.Gates
                 .Include(g => g.Location)
+                .Include(g => g.Site)
                 .Include(g => g.Readers)
                 .ToList();
         }

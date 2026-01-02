@@ -37,6 +37,7 @@ namespace ZebraIoTConnector.Services
                 Name = dto.Name,
                 Description = dto.Description,
                 LocationId = dto.LocationId,
+                SiteId = dto.SiteId,
                 IsActive = dto.IsActive
             };
 
@@ -75,6 +76,9 @@ namespace ZebraIoTConnector.Services
             
             if (dto.LocationId.HasValue)
                 gate.LocationId = dto.LocationId;
+
+            if (dto.SiteId.HasValue)
+                gate.SiteId = dto.SiteId;
 
             if (dto.IsActive.HasValue)
                 gate.IsActive = dto.IsActive.Value;
@@ -157,15 +161,17 @@ namespace ZebraIoTConnector.Services
                 Description = gate.Description,
                 LocationId = gate.LocationId,
                 LocationName = gate.Location?.Name,
+                SiteId = gate.SiteId,
+                SiteName = gate.Site?.Name,
                 IsActive = gate.IsActive,
-                Readers = gate.Readers?.Select(r => new ReaderDto
+                Readers = gate.Readers?.Select(r => new EquipmentDto
                 {
                     Id = r.Id,
                     Name = r.Name,
                     Description = r.Description,
                     IsMobile = r.IsMobile,
                     IsOnline = r.IsOnline
-                }).ToList() ?? new List<ReaderDto>()
+                }).ToList() ?? new List<EquipmentDto>()
             };
         }
     }

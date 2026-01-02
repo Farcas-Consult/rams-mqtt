@@ -106,6 +106,9 @@ namespace ZebraIoTConnector.Persistence
         // Asset tracking entities
         public DbSet<Asset> Assets { get; internal set; }
         public DbSet<Gate> Gates { get; internal set; }
+        public DbSet<Site> Sites { get; internal set; }
         public DbSet<AssetMovement> AssetMovements { get; internal set; }
+
+
     }
 }

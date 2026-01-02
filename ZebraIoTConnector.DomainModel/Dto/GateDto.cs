@@ -8,9 +8,11 @@ namespace ZebraIoTConnector.DomainModel.Dto
         public string Name { get; set; }
         public string? Description { get; set; }
         public int? LocationId { get; set; }
-        public string? LocationName { get; set; }
+        public string LocationName { get; set; }
+        public int? SiteId { get; set; }
+        public string SiteName { get; set; }
         public bool IsActive { get; set; }
-        public List<ReaderDto> Readers { get; set; } = new List<ReaderDto>();
+        public List<EquipmentDto> Readers { get; set; } = new List<EquipmentDto>();
     }
 
     public class ReaderDto

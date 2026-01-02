@@ -5,23 +5,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ZebraIoTConnector.Persistence.Entities
 {
     [Index(nameof(Name), IsUnique = true)]
-    public class Gate
+    public class Site
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         public string Name { get; set; }
         public string? Description { get; set; }
-        public int? LocationId { get; set; }
-        public int? SiteId { get; set; }
-        public bool IsActive { get; set; } = true;
 
-        // Navigation properties
-        public StorageUnit? Location { get; set; }
-        public Site? Site { get; set; }
-        public List<Equipment> Readers { get; set; } = new List<Equipment>();
+        // Navigation property
+        public List<Gate> Gates { get; set; } = new List<Gate>();
     }
 }
-
-
-

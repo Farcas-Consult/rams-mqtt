@@ -14,6 +14,7 @@ namespace ZebraIoTConnector.Services
         void AssignTagToAsset(int assetId, string tagIdentifier);
         void UnassignTag(int assetId);
         AssetImportResultDto BulkImportAssets(List<BulkImportAssetDto> assets);
+        void ReportMovement(ReportMovementDto dto);
     }
 }
 
