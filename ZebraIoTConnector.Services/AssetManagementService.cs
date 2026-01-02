@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using ZebraIoTConnector.DomainModel.Dto;
 using ZebraIoTConnector.Persistence;
 using ZebraIoTConnector.Persistence.Entities;
@@ -12,11 +13,13 @@ namespace ZebraIoTConnector.Services
     {
         private readonly ILogger<AssetManagementService> logger;
         private readonly IUnitOfWork unitOfWork;
+        private readonly ITagReadNotifier? tagReadNotifier;
 
-        public AssetManagementService(ILogger<AssetManagementService> logger, IUnitOfWork unitOfWork)
+        public AssetManagementService(ILogger<AssetManagementService> logger, IUnitOfWork unitOfWork, ITagReadNotifier? tagReadNotifier = null)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            this.tagReadNotifier = tagReadNotifier; // Optional injection
         }
 
         public AssetDto CreateAsset(CreateAssetDto dto)
@@ -392,8 +395,7 @@ namespace ZebraIoTConnector.Services
             if (asset == null)
             {
                 logger.LogWarning($"Unregistered tag {dto.TagId} reported by mobile device {dto.DeviceId}");
-                // Optionally auto-create or just log
-                return;
+                throw new KeyNotFoundException($"Asset with Tag ID '{dto.TagId}' not found.");
             }
 
             // 2. Get Gate/Location
@@ -404,7 +406,7 @@ namespace ZebraIoTConnector.Services
                 if (gate == null)
                 {
                     logger.LogWarning($"Invalid GateId {dto.GateId} reported by mobile device {dto.DeviceId}");
-                    return; 
+                    throw new KeyNotFoundException($"Gate with ID {dto.GateId} not found."); 
                 }
 
                 if (!gate.LocationId.HasValue)
@@ -436,7 +438,8 @@ namespace ZebraIoTConnector.Services
                 GateId = gate?.Id,
                 ReaderId = null, // No registered reader entity
                 ReaderIdString = dto.DeviceId,
-                ReadTimestamp = dto.Timestamp
+                ReadTimestamp = dto.Timestamp,
+                Direction = dto.Direction
             };
 
             unitOfWork.AssetMovementRepository.Add(movement);
@@ -444,6 +447,48 @@ namespace ZebraIoTConnector.Services
             unitOfWork.SaveChanges();
 
             logger.LogInformation($"Asset {asset.AssetNumber} reported at {(gate?.Name ?? "Unknown Gate")} by device {dto.DeviceId}");
+
+            // Send SignalR message if notifier is available (Fix for Live Feed)
+            if (tagReadNotifier != null)
+            {
+                logger.LogInformation($"[LiveFeed] Attempting to notify frontend for asset {asset.AssetNumber}");
+                try
+                {
+                    var message = new
+                    {
+                        TagId = dto.TagId,
+                        AssetNumber = asset.AssetNumber,
+                        AssetName = asset.Name,
+                        Gate = gate?.Name ?? "Portable Gate",
+                        Location = gate?.Location?.Name ?? asset.CurrentLocation?.Name,
+                        Timestamp = dto.Timestamp,
+                        Plant = asset.Plant,
+                        Direction = dto.Direction // Added Direction
+                    };
+                    
+                    // Safest way without changing interface signature:
+                    Task.Run(async () => 
+                    {
+                        try 
+                        {
+                            await tagReadNotifier.NotifyTagReadAsync(message);
+                            logger.LogInformation($"[LiveFeed] Notification sent for asset {asset.AssetNumber}");
+                        }
+                        catch(Exception ex)
+                        {
+                            logger.LogError(ex, "[LiveFeed] Async notification failed");
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to call notifier for portable movement");
+                }
+            }
+            else
+            {
+                 logger.LogWarning($"[LiveFeed] tagReadNotifier is NULL. Asset: {asset.AssetNumber}");
+            }
         }
 
         private AssetDto MapToDto(Asset asset)
@@ -488,4 +533,3 @@ namespace ZebraIoTConnector.Services
         }
     }
 }
-
