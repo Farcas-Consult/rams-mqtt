@@ -120,7 +120,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
         /// <summary>
         /// Update an existing asset
         /// </summary>
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -159,7 +159,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
         /// <summary>
         /// Delete an asset (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult DeleteAsset(int id)
@@ -183,7 +183,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
         /// <summary>
         /// Assign a tag to an asset
         /// </summary>
-        [HttpPost("{id}/assign-tag")]
+        [HttpPost("{id:int}/assign-tag")]
         [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -224,7 +224,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
         /// <summary>
         /// Unassign tag from an asset
         /// </summary>
-        [HttpPost("{id}/unassign-tag")]
+        [HttpPost("{id:int}/unassign-tag")]
         [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<AssetDto> UnassignTag(int id)
@@ -272,7 +272,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
         /// <summary>
         /// Associate multiple tags to an asset (Container/Vehicle)
         /// </summary>
-        [HttpPost("associate-tags")]
+        [HttpPost("associate-tags", Order = -1)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

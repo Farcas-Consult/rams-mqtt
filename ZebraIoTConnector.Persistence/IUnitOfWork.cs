@@ -18,7 +18,6 @@ namespace ZebraIoTConnector.Persistence
         IGateRepository GateRepository { get; }
         IAssetMovementRepository AssetMovementRepository { get; }
         ISiteRepository SiteRepository { get; }
-        ISiteRepository SiteRepository { get; }
         IStorageUnitRepository StorageUnitRepository { get; }
         Microsoft.EntityFrameworkCore.DbSet<Entities.AssetTag> AssetTags { get; }
 
