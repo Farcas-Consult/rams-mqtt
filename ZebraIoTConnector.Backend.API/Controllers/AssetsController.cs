@@ -303,24 +303,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Get assets for handheld synchronization
-        /// </summary>
-        [HttpGet("sync")]
-        [ProducesResponseType(typeof(List<AssetDto>), StatusCodes.Status200OK)]
-        public ActionResult<List<AssetDto>> GetSyncAssets()
-        {
-            try
-            {
-                var assets = assetManagementService.GetSyncAssets();
-                return Ok(assets);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error getting sync assets");
-                return StatusCode(500, "An error occurred while getting sync assets");
-            }
-        }
+
     }
 
     public class AssignTagRequest

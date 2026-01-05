@@ -32,7 +32,9 @@ namespace ZebraIoTConnector.Persistence
         public IGateRepository GateRepository => gateRepository;
         public IAssetMovementRepository AssetMovementRepository => assetMovementRepository;
         public ISiteRepository SiteRepository => siteRepository;
+        public ISiteRepository SiteRepository => siteRepository;
         public IStorageUnitRepository StorageUnitRepository => storageUnitRepository;
+        public Microsoft.EntityFrameworkCore.DbSet<Entities.AssetTag> AssetTags => zebraDbContext.AssetTags;
 
         public UnitOfWork(ZebraDbContext zebraDbContext)
         {

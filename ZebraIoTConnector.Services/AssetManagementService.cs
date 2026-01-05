@@ -541,18 +541,7 @@ namespace ZebraIoTConnector.Services
             logger.LogInformation($"Associated {dto.Tags.Count} tags to asset {asset.AssetNumber}");
         }
 
-        public List<AssetDto> GetSyncAssets()
-        {
-            // Requirement: "Verify if the vehicle is eligible to be tagged"
-            // For now, return all assets, or perhaps those without tags?
-            // Returning all assets for the handheld to validate against.
-            // Explicitly including Tags to check status.
-            var assets = unitOfWork.AssetRepository.GetAll()
-                .Include(a => a.Tags) // Ensure Tags are loaded
-                .ToList();
 
-            return assets.Select(MapToDto).ToList();
-        }
 
         private AssetDto MapToDto(Asset asset)
         {
