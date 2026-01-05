@@ -491,6 +491,69 @@ namespace ZebraIoTConnector.Services
             }
         }
 
+        public void AssociateTags(AssociateTagsDto dto)
+        {
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
+            if (string.IsNullOrWhiteSpace(dto.AssetNumber)) throw new ArgumentException("AssetNumber is required");
+
+            var asset = unitOfWork.AssetRepository.GetByAssetNumber(dto.AssetNumber);
+            if (asset == null)
+            {
+                throw new KeyNotFoundException($"Asset with number '{dto.AssetNumber}' not found");
+            }
+
+            // Remove existing tags for this asset
+            // Note: Efficient way depends on repository capabilities. 
+            // Here we might need to load them first if not cascade delete, or use raw SQL.
+            // For now, assuming we can fetch and remove.
+            var existingTags = unitOfWork.AssetTags.Where(t => t.AssetId == asset.Id).ToList();
+            if (existingTags.Any())
+            {
+                unitOfWork.AssetTags.RemoveRange(existingTags);
+            }
+
+            // Add new tags
+            foreach (var tagDto in dto.Tags)
+            {
+                var assetTag = new AssetTag
+                {
+                    AssetId = asset.Id,
+                    TagId = tagDto.TagId,
+                    Location = tagDto.Location
+                };
+                unitOfWork.AssetTags.Add(assetTag);
+            }
+
+            // Update primary TagIdentifier for backward compatibility (use the first one or generic)
+            if (dto.Tags.Any())
+            {
+                asset.TagIdentifier = dto.Tags.First().TagId; // Using first tag as primary
+            }
+            else
+            {
+                asset.TagIdentifier = null;
+            }
+            asset.UpdatedAt = DateTime.UtcNow;
+
+            unitOfWork.AssetRepository.Update(asset);
+            unitOfWork.SaveChanges();
+            
+            logger.LogInformation($"Associated {dto.Tags.Count} tags to asset {asset.AssetNumber}");
+        }
+
+        public List<AssetDto> GetSyncAssets()
+        {
+            // Requirement: "Verify if the vehicle is eligible to be tagged"
+            // For now, return all assets, or perhaps those without tags?
+            // Returning all assets for the handheld to validate against.
+            // Explicitly including Tags to check status.
+            var assets = unitOfWork.AssetRepository.GetAll()
+                .Include(a => a.Tags) // Ensure Tags are loaded
+                .ToList();
+
+            return assets.Select(MapToDto).ToList();
+        }
+
         private AssetDto MapToDto(Asset asset)
         {
             if (asset == null)
@@ -528,7 +591,8 @@ namespace ZebraIoTConnector.Services
                 CurrentLocationName = asset.CurrentLocation?.Name,
                 CreatedAt = asset.CreatedAt,
                 UpdatedAt = asset.UpdatedAt,
-                IsDeleted = asset.IsDeleted
+                IsDeleted = asset.IsDeleted,
+                Tags = asset.Tags?.Select(t => new AssetTagDto { TagId = t.TagId, Location = t.Location }).ToList() ?? new List<AssetTagDto>()
             };
         }
     }

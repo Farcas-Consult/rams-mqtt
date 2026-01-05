@@ -40,6 +40,8 @@ namespace ZebraIoTConnector.DomainModel.Dto
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
+
+        public System.Collections.Generic.List<AssetTagDto> Tags { get; set; } = new System.Collections.Generic.List<AssetTagDto>();
     }
 }
 

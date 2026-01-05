@@ -41,7 +41,7 @@ namespace ZebraIoTConnector.Backend.API.Controllers
         /// <summary>
         /// Get asset by ID
         /// </summary>
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<AssetDto> GetAsset(int id)
@@ -266,6 +266,59 @@ namespace ZebraIoTConnector.Backend.API.Controllers
             {
                 logger.LogError(ex, "Error during bulk import");
                 return StatusCode(500, "An error occurred during bulk import");
+            }
+        }
+
+        /// <summary>
+        /// Associate multiple tags to an asset (Container/Vehicle)
+        /// </summary>
+        [HttpPost("associate-tags")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult AssociateTags([FromBody] AssociateTagsDto dto)
+        {
+            try
+            {
+                if (dto == null)
+                    return BadRequest("Request body is required");
+
+                assetManagementService.AssociateTags(dto);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogWarning(ex, "Invalid request to associate tags");
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                logger.LogWarning(ex, "Asset not found for tag association");
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error associating tags");
+                return StatusCode(500, "An error occurred while associating tags");
+            }
+        }
+
+        /// <summary>
+        /// Get assets for handheld synchronization
+        /// </summary>
+        [HttpGet("sync")]
+        [ProducesResponseType(typeof(List<AssetDto>), StatusCodes.Status200OK)]
+        public ActionResult<List<AssetDto>> GetSyncAssets()
+        {
+            try
+            {
+                var assets = assetManagementService.GetSyncAssets();
+                return Ok(assets);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting sync assets");
+                return StatusCode(500, "An error occurred while getting sync assets");
             }
         }
     }

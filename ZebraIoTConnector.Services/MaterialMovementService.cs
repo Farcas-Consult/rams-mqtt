@@ -35,48 +35,37 @@ namespace ZebraIoTConnector.Services
 
         public async Task NewTagReaded(string clientId, List<TagReadEvent> tagReadEvent)
         {
-            logger.LogInformation($"[TagProcess] Processing {tagReadEvent?.Count ?? 0} tags from {clientId}");
-            
             if (tagReadEvent == null || tagReadEvent.Count == 0)
-            {
-                logger.LogWarning("[TagProcess] No tags to process");
                 return;
-            }
 
             // Get reader entity with Gate navigation
             var reader = unitOfWork.EquipmentRepository.GetEquipmentEntityByName(clientId);
             
             if (reader == null)
             {
-                logger.LogWarning($"[TagProcess] Reader {clientId} not found in database");
+                logger.LogWarning($"Reader {clientId} not registered yet, tag read message received before the heartbeat");
                 return;
             }
-            
-            logger.LogInformation($"[TagProcess] Found reader: {reader.Name}, GateId: {reader.GateId}");
 
             var gate = reader.Gate;
             
             if (gate == null)
             {
-                logger.LogWarning($"[TagProcess] Reader {clientId} (ID={reader.Id}) is not assigned to a gate. GateId={reader.GateId}");
+                logger.LogWarning($"Reader {clientId} is not assigned to a gate");
                 return;
             }
-            
-            logger.LogInformation($"[TagProcess] Gate: {gate.Name}, IsActive: {gate.IsActive}, LocationId: {gate.LocationId}");
 
             if (!gate.IsActive)
             {
-                logger.LogWarning($"[TagProcess] Gate {gate.Name} is not active");
+                logger.LogWarning($"Gate {gate.Name} is not active");
                 return;
             }
 
             if (gate.Location == null)
             {
-                logger.LogWarning($"[TagProcess] Gate {gate.Name} does not have a location configured");
+                logger.LogWarning($"Gate {gate.Name} does not have a location configured");
                 return;
             }
-            
-            logger.LogInformation($"[TagProcess] Location: {gate.Location.Name}. Processing {tagReadEvent.Count} tags...");
 
             // Process each tag
             foreach (var tag in tagReadEvent)

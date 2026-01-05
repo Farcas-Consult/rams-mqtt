@@ -55,6 +55,7 @@ namespace ZebraIoTConnector.Persistence.Entities
         // Navigation properties
         public StorageUnit? CurrentLocation { get; set; }
         public List<AssetMovement> Movements { get; set; } = new List<AssetMovement>();
+        public List<AssetTag> Tags { get; set; } = new List<AssetTag>();
     }
 }
 

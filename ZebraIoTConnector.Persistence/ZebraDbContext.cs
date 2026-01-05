@@ -99,6 +99,7 @@ namespace ZebraIoTConnector.Persistence
         }
 
         public DbSet<Equipment> Equipments { get; internal set; }
+        public DbSet<AssetTag> AssetTags { get; set; }
         public DbSet<StorageUnit> StorageUnits { get; internal set; }
         public DbSet<Sublot> Sublots { get; internal set; }
         public DbSet<InventoryOperation> InventoryOperation { get; internal set; }
