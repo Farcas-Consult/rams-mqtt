@@ -2,7 +2,7 @@
     "READER-GATEWAY": {
         "batching": {
             "maxPayloadSizePerReport": 0,
-            "reportingInterval": 0
+            "reportingInterval": 1000
         },
         "retention": {
             "maxEventRetentionTimeInMin": -1,

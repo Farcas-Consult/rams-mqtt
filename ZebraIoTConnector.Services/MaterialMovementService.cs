@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using ZebraIoTConnector.DomainModel.Reader;
@@ -13,6 +14,11 @@ namespace ZebraIoTConnector.Services
         private readonly ILogger<MaterialMovementService> logger;
         private readonly IUnitOfWork unitOfWork;
         private readonly ITagReadNotifier? tagReadNotifier;
+        
+        // Cooldown cache: Key = "TagId:GateId", Value = LastSeenTime
+        // 30 second cooldown for gate scenarios (people walking through)
+        private static readonly ConcurrentDictionary<string, DateTime> _tagCooldownCache = new();
+        private static readonly TimeSpan CooldownPeriod = TimeSpan.FromSeconds(30);
 
         public MaterialMovementService(ILogger<MaterialMovementService> logger, IUnitOfWork unitOfWork)
             : this(logger, unitOfWork, null)
@@ -66,12 +72,58 @@ namespace ZebraIoTConnector.Services
             {
                 try
                 {
+                    // Check cooldown - skip if we've seen this tag at this gate recently
+                    var cooldownKey = $"{tag.IdHex}:{gate.Id}";
+                    if (_tagCooldownCache.TryGetValue(cooldownKey, out var lastSeen))
+                    {
+                        if (DateTime.UtcNow - lastSeen < CooldownPeriod)
+                        {
+                            logger.LogDebug($"Tag {tag.IdHex} at gate {gate.Name} is in cooldown, skipping");
+                            continue;
+                        }
+                    }
+                    
+                    // Update cooldown timestamp
+                    _tagCooldownCache[cooldownKey] = DateTime.UtcNow;
+                    
+                    // Cleanup old entries periodically (every 100 entries, remove stale ones)
+                    if (_tagCooldownCache.Count > 100)
+                    {
+                        CleanupCooldownCache();
+                    }
+                    
                     // Look up asset by tag identifier (DON'T AUTO-CREATE!)
                     var asset = unitOfWork.AssetRepository.GetByTagIdentifier(tag.IdHex);
                     
                     if (asset == null)
                     {
                         logger.LogWarning($"Unregistered tag: {tag.IdHex} at gate {gate.Name}");
+                        
+                        // Send SignalR notification for unknown tag
+                        if (tagReadNotifier != null)
+                        {
+                            try
+                            {
+                                var unknownMessage = new
+                                {
+                                    TagId = tag.IdHex,
+                                    AssetNumber = (string?)null,
+                                    AssetName = "Unknown Tag",
+                                    Gate = gate.Name,
+                                    Location = gate.Location?.Name,
+                                    Timestamp = DateTime.UtcNow,
+                                    Plant = (string?)null,
+                                    Status = "Unknown"
+                                };
+                                
+                                await tagReadNotifier.NotifyTagReadAsync(unknownMessage);
+                                logger.LogInformation($"[LiveFeed] Unknown tag {tag.IdHex} notification sent");
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.LogWarning(ex, "Failed to send unknown tag notification");
+                            }
+                        }
                         continue;
                     }
 
@@ -115,7 +167,8 @@ namespace ZebraIoTConnector.Services
                                 Gate = gate.Name,
                                 Location = gate.Location?.Name,
                                 Timestamp = DateTime.UtcNow,
-                                Plant = asset.Plant
+                                Plant = asset.Plant,
+                                Status = "Known"
                             };
                             
                             await tagReadNotifier.NotifyTagReadAsync(message);
@@ -141,6 +194,19 @@ namespace ZebraIoTConnector.Services
             {
                 logger.LogError(ex, $"Error saving asset movements for reader {clientId}");
                 throw;
+            }
+        }
+        
+        private static void CleanupCooldownCache()
+        {
+            var expiredKeys = _tagCooldownCache
+                .Where(kvp => DateTime.UtcNow - kvp.Value > CooldownPeriod * 2)
+                .Select(kvp => kvp.Key)
+                .ToList();
+                
+            foreach (var key in expiredKeys)
+            {
+                _tagCooldownCache.TryRemove(key, out _);
             }
         }
     }
