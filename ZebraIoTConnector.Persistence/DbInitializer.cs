@@ -10,12 +10,23 @@ namespace ZebraIoTConnector.Persistence
         {
             context.Database.EnsureCreated();
 
+            // Cleanup virtual readers (requested by user)
+            var virtualReaders = context.Equipments
+                .Where(e => e.Name == "myfxIN" || e.Name == "myfxOUT")
+                .ToList();
+            
+            if (virtualReaders.Any())
+            {
+                context.Equipments.RemoveRange(virtualReaders);
+                context.SaveChanges();
+            }
+
             // Look for any equipments.
             if (context.Equipments.Any(e => e.Name == "fx9600fd776c"))
             {
                 return;   // Reader has been seeded
             }
-
+            
             var reader = new Equipment
             {
                 Name = "fx9600fd776c",

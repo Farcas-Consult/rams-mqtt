@@ -41,6 +41,9 @@ namespace ZebraIoTConnector.FXReaderInterface
 
         public void TagDataEventReceived(string clientId, List<TagReadEvent> tagReadEvent)
         {
+            // Log raw reception to help debugging
+            Console.WriteLine($"[RawMQTT] Received {tagReadEvent?.Count ?? 0} tags from {clientId}");
+
             // Fire-and-forget async operation (interface requires void return type)
             _ = Task.Run(async () => await materialMovementService.NewTagReaded(clientId, tagReadEvent));
         }
