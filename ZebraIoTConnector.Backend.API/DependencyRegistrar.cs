@@ -49,9 +49,9 @@ namespace ZebraIoTConnector.Backend.API
             services.AddScoped<ISubscriptionManager>(sp =>
             {
                 var logger = sp.GetRequiredService<ILogger<SubscriptionManager>>();
-                var parser = sp.GetRequiredService<ISubscriptionEventParser>();
+                var scopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
                 var mqttService = sp.GetRequiredService<IMQTTClientService>();
-                return new SubscriptionManager(logger, parser, mqttService, configuration);
+                return new SubscriptionManager(logger, scopeFactory, mqttService, configuration);
             });
 
             // Reader interface

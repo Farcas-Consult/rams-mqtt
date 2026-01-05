@@ -29,7 +29,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowClientApp",
         builder => builder
-            .WithOrigins("http://localhost:3000", "http://172.24.32.1:3000") // Localhost and Remote Frontend
+                .WithOrigins("http://localhost:3000", "http://169.254.7.130:3000", "http://192.168.0.100:3000") // Localhost and Remote Frontend
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials()); // Required for SignalR

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ZebraIoTConnector.Client.MQTT.Console.Model;
 using ZebraIoTConnector.Client.MQTT.Console.Services;
@@ -8,19 +9,26 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
     public class SubscriptionManager : ISubscriptionManager
     {
         private readonly ILogger<SubscriptionManager> logger;
-        private readonly ISubscriptionEventParser subscriptionEventParser;
+        private readonly IServiceScopeFactory serviceScopeFactory;
         private readonly IMQTTClientService mqttClientService;
         private readonly IConfiguration? configuration;
 
-        public SubscriptionManager(ILogger<SubscriptionManager> logger, ISubscriptionEventParser subscriptionEventParser, IMQTTClientService mqttClientService)
-            : this(logger, subscriptionEventParser, mqttClientService, null)
+        public SubscriptionManager(
+            ILogger<SubscriptionManager> logger, 
+            IServiceScopeFactory serviceScopeFactory,
+            IMQTTClientService mqttClientService)
+            : this(logger, serviceScopeFactory, mqttClientService, null)
         {
         }
 
-        public SubscriptionManager(ILogger<SubscriptionManager> logger, ISubscriptionEventParser subscriptionEventParser, IMQTTClientService mqttClientService, IConfiguration? configuration)
+        public SubscriptionManager(
+            ILogger<SubscriptionManager> logger, 
+            IServiceScopeFactory serviceScopeFactory,
+            IMQTTClientService mqttClientService, 
+            IConfiguration? configuration)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.subscriptionEventParser = subscriptionEventParser ?? throw new ArgumentNullException(nameof(subscriptionEventParser));
+            this.serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
             this.mqttClientService = mqttClientService ?? throw new ArgumentNullException(nameof(mqttClientService));
             this.configuration = configuration;
         }
@@ -45,7 +53,7 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
 
             logger.LogInformation($"Successfully subscribed to {topic}");
 
-            // Subscribe to events
+            // Subscribe to events - create new scope for each message to avoid disposed context
             mqttClientService.ApplicationMessageReceived += async args =>
             {
                 try
@@ -62,26 +70,32 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
 
         public Task SubscriptionEventReceived(SubscriptionEventReceived args)
         {
-            // Default config:
-            // zebra/{myreader}/{topic}
-            // e.g.
-            // zebra/FX000000/data
-            // zebra/FX000000/events
-            // zebra/FX000000/ctrl/res
-
-            switch (args.Topic.Split('/').Last())
+            // Create a new scope for each message to get fresh DbContext
+            using (var scope = serviceScopeFactory.CreateScope())
             {
-                case "data":
-                    subscriptionEventParser.TagDataEventParser(args);
-                    break;
-                case "events":
-                    subscriptionEventParser.ManagementEventParser(args);
-                    break;
-                case "res":
-                    subscriptionEventParser.AllTopicsResponseParser(args);
-                    break;
-                default:
-                    break;
+                var subscriptionEventParser = scope.ServiceProvider.GetRequiredService<ISubscriptionEventParser>();
+                
+                // Default config:
+                // zebra/{myreader}/{topic}
+                // e.g.
+                // zebra/FX000000/data
+                // zebra/FX000000/events
+                // zebra/FX000000/ctrl/res
+
+                switch (args.Topic.Split('/').Last())
+                {
+                    case "data":
+                        subscriptionEventParser.TagDataEventParser(args);
+                        break;
+                    case "events":
+                        subscriptionEventParser.ManagementEventParser(args);
+                        break;
+                    case "res":
+                        subscriptionEventParser.AllTopicsResponseParser(args);
+                        break;
+                    default:
+                        break;
+                }
             }
 
             return Task.CompletedTask;
