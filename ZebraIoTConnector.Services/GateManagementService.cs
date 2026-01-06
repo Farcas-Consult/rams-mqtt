@@ -184,7 +184,10 @@ namespace ZebraIoTConnector.Services
                     Name = r.Name,
                     Description = r.Description,
                     IsMobile = r.IsMobile,
-                    IsOnline = r.IsOnline
+                    IsOnline = r.IsOnline,
+                    GateId = r.GateId,
+                    GateName = gate.Name, // The reader is part of this gate
+                    LastHeartbeat = r.LastHeartbeat
                 }).ToList() ?? new List<EquipmentDto>()
             };
         }
