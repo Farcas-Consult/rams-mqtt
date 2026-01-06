@@ -18,11 +18,11 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=sql.data,1433;Database=ZebraRFID_DockDoor;MultipleActiveResultSets=true;User ID=sa;Password=Zebra2022!
+      - ConnectionStrings__DefaultConnection=Server=sql.data,1433;Database=ZebraRFID_DockDoor;MultipleActiveResultSets=true;User ID=sa;Password=Zebra2022!;TrustServerCertificate=True
       - Mqtt__BrokerHost=mosquitto
     depends_on:
       sql.data:
-        condition: service_started
+        condition: service_healthy
       mosquitto:
         condition: service_started
   sql.data:
