@@ -16,5 +16,10 @@ namespace ZebraIoTConnector.DomainModel.Dto
         public Direction? RefStorageUnitDirection { get; set; }
         public bool IsMobile { get; set; }
         public bool IsOnline { get; set; }
+        
+        // Gate assignment info (critical for tag processing)
+        public int? GateId { get; set; }
+        public string? GateName { get; set; }
+        public DateTime? LastHeartbeat { get; set; }
     }
 }

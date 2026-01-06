@@ -38,20 +38,28 @@ namespace ZebraIoTConnector.Persistence.Repositories
         {
             return zebraDbContext.Equipments
                 .Include(x => x.ReferenceStorageUnit)
+                .Include(x => x.Gate)
                 .Select(eq => new EquipmentDto()
                 {
                     Id = eq.Id,
                     Name = eq.Name,
                     Description = eq.Description,
                     RefStorageUnitName = eq.ReferenceStorageUnit == null ? "" : eq.ReferenceStorageUnit.Name,
-                    RefStorageUnitDirection = eq.ReferenceStorageUnit == null ? DomainModel.Enums.Direction.None : eq.ReferenceStorageUnit.Direction
+                    RefStorageUnitDirection = eq.ReferenceStorageUnit == null ? DomainModel.Enums.Direction.None : eq.ReferenceStorageUnit.Direction,
+                    IsMobile = eq.IsMobile,
+                    IsOnline = eq.IsOnline,
+                    GateId = eq.GateId,
+                    GateName = eq.Gate != null ? eq.Gate.Name : null,
+                    LastHeartbeat = eq.LastHeartbeat
                 })
                 .ToList();
         }
         public EquipmentDto GetEquipmentByName(string name)
         {
             var eq = zebraDbContext.Equipments
-                .Include(x => x.ReferenceStorageUnit).SingleOrDefault(x => x.Name == name);
+                .Include(x => x.ReferenceStorageUnit)
+                .Include(x => x.Gate)
+                .SingleOrDefault(x => x.Name == name);
 
             if (eq == null)
                 return null;
@@ -62,7 +70,12 @@ namespace ZebraIoTConnector.Persistence.Repositories
                 Name = eq.Name,
                 Description = eq.Description,
                 RefStorageUnitName = eq.ReferenceStorageUnit?.Name,
-                RefStorageUnitDirection = eq.ReferenceStorageUnit?.Direction
+                RefStorageUnitDirection = eq.ReferenceStorageUnit?.Direction,
+                IsMobile = eq.IsMobile,
+                IsOnline = eq.IsOnline,
+                GateId = eq.GateId,
+                GateName = eq.Gate?.Name,
+                LastHeartbeat = eq.LastHeartbeat
             };
         }
 
