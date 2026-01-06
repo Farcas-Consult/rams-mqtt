@@ -38,6 +38,8 @@ namespace ZebraIoTConnector.Services
             if (tagReadEvent == null || tagReadEvent.Count == 0)
                 return;
 
+            // FORCE LOG - Console.WriteLine will ALWAYS appear in Docker logs
+            Console.WriteLine($"=== [TagProcess v2026.01.06] Processing {tagReadEvent.Count} tags from {clientId} ===");
             logger.LogInformation($"[TagProcess] Processing {tagReadEvent.Count} tags from {clientId}");
 
             // Get reader entity with Gate navigation
@@ -45,10 +47,12 @@ namespace ZebraIoTConnector.Services
             
             if (reader == null)
             {
+                Console.WriteLine($"=== [TagProcess] BLOCKED: Reader '{clientId}' not found ===");
                 logger.LogWarning($"[TagProcess] BLOCKED: Reader '{clientId}' not registered yet");
                 return;
             }
             
+            Console.WriteLine($"=== [TagProcess] Reader found: ID={reader.Id}, Name={reader.Name}, GateId={reader.GateId} ===");
             logger.LogInformation($"[TagProcess] Reader found: ID={reader.Id}, GateId={reader.GateId}");
 
             var gate = reader.Gate;

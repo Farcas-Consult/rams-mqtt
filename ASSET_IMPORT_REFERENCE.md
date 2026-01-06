@@ -24,6 +24,10 @@ This document provides a detailed mapping between the SAP export columns and the
 | **UserStatus** | `UserStatus` | `string` (50) | ❌ No | User status codes (comma-separated if multiple) |
 | **AcquistnValue** | `AcquisitionValue` | `decimal(18,2)` | ❌ No | Acquisition value |
 | **Comment** | `Comments` | `string` (1000) | ❌ No | Additional comments |
+| **Manufacturer** | `Manufacturer` | `string` | ❌ No | Manufacturer name |
+| **PurchaseDate** | `PurchaseDate` | `DateTime?` | ❌ No | Date of purchase |
+| **Category** | `Category` | `string` | ❌ No | Asset category |
+| **Location** | `Location` | `string` | ❌ No | Friendly location name |
 | - | `TagIdentifier` | `string` (100) | ❌ No | RFID tag EPC (assigned later, unique) |
 | - | `LastDiscoveredAt` | `DateTime?` | ❌ No | Auto-updated on tag read |
 | - | `LastDiscoveredBy` | `string` (100) | ❌ No | Gate/reader name |
