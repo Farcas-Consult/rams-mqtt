@@ -148,6 +148,12 @@ namespace ZebraIoTConnector.Services
                 var gate = unitOfWork.GateRepository.GetById(request.GateId);
                 if (gate == null) return;
 
+                if (gate.LocationId == null)
+                {
+                    logger.LogError($"[Movement] Gate {gate.Name} has no location configured. Cannot record movement.");
+                    return;
+                }
+
                 // Update Asset Location
                 var previousLocationId = asset.CurrentLocationId;
                 asset.LastDiscoveredAt = request.Timestamp;
@@ -166,7 +172,7 @@ namespace ZebraIoTConnector.Services
                     Asset = asset,
                     AssetId = asset.Id,
                     FromLocationId = previousLocationId,
-                    ToLocationId = gate.LocationId,
+                    ToLocationId = gate.LocationId.Value,
                     GateId = gate.Id,
                     ReaderIdString = request.ReaderId,
                     ReadTimestamp = request.Timestamp,

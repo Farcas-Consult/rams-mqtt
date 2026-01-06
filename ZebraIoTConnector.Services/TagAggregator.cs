@@ -188,7 +188,7 @@ namespace ZebraIoTConnector.Services
                 }
             }
 
-            private void OnTimerCallback(object state)
+            private void OnTimerCallback(object? state)
             {
                 _callback(this);
             }
