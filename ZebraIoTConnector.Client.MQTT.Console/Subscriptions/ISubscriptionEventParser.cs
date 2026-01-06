@@ -6,6 +6,6 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
     {
         void AllTopicsResponseParser(SubscriptionEventReceived args);
         void ManagementEventParser(SubscriptionEventReceived args);
-        void TagDataEventParser(SubscriptionEventReceived args);
+        Task TagDataEventParserAsync(SubscriptionEventReceived args);
     }
 }

@@ -28,7 +28,7 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
             this.fXReaderManager = fXReaderManager ?? throw new ArgumentNullException(nameof(fXReaderManager));
             this.publisherManager = publisherManager ?? throw new ArgumentNullException(nameof(publisherManager));
         }
-        public void TagDataEventParser(SubscriptionEventReceived args)
+        public async Task TagDataEventParserAsync(SubscriptionEventReceived args)
         {
             var token = JToken.Parse(args.Payload);
             List<TagDataEvent> result = new List<TagDataEvent>();
@@ -46,7 +46,8 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
                 IdHex = x.IdHex
             }).ToList();
 
-            fXReaderManager.TagDataEventReceived(args.ClientId, tagDataEventModel);
+            // Await the async call - this keeps the scope alive!
+            await fXReaderManager.TagDataEventReceivedAsync(args.ClientId, tagDataEventModel);
         }
 
 

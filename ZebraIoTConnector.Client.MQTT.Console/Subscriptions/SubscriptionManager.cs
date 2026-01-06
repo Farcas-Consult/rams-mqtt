@@ -68,7 +68,7 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
 
         }
 
-        public Task SubscriptionEventReceived(SubscriptionEventReceived args)
+        public async Task SubscriptionEventReceived(SubscriptionEventReceived args)
         {
             // Create a new scope for each message to get fresh DbContext
             using (var scope = serviceScopeFactory.CreateScope())
@@ -85,7 +85,8 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
                 switch (args.Topic.Split('/').Last())
                 {
                     case "data":
-                        subscriptionEventParser.TagDataEventParser(args);
+                        // AWAIT the async call - scope stays alive until this completes!
+                        await subscriptionEventParser.TagDataEventParserAsync(args);
                         break;
                     case "events":
                         subscriptionEventParser.ManagementEventParser(args);
@@ -97,8 +98,6 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
                         break;
                 }
             }
-
-            return Task.CompletedTask;
         }
 
     }

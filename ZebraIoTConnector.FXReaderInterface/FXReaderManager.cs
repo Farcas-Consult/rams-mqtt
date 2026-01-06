@@ -39,29 +39,26 @@ namespace ZebraIoTConnector.FXReaderInterface
             equipmentRegistryService.FXReaderHeartBeat(heartBeatEvent);
         }
 
-        public void TagDataEventReceived(string clientId, List<TagReadEvent> tagReadEvent)
+        public async Task TagDataEventReceivedAsync(string clientId, List<TagReadEvent> tagReadEvent)
         {
             // Log raw reception to help debugging
             Console.WriteLine($"[RawMQTT] Received {tagReadEvent?.Count ?? 0} tags from {clientId}");
 
-            // Fire-and-forget async operation with exception logging
-            _ = Task.Run(async () =>
+            try
             {
-                try
-                {
-                    await materialMovementService.NewTagReaded(clientId, tagReadEvent);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"=== [TagProcess] EXCEPTION: {ex.GetType().Name}: {ex.Message} ===");
-                    Console.WriteLine($"=== [TagProcess] StackTrace: {ex.StackTrace} ===");
-                }
-            });
+                // Await directly - no Task.Run, keep the scope alive!
+                await materialMovementService.NewTagReaded(clientId, tagReadEvent);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"=== [TagProcess] EXCEPTION: {ex.GetType().Name}: {ex.Message} ===");
+                Console.WriteLine($"=== [TagProcess] StackTrace: {ex.StackTrace} ===");
+            }
         }
+        
         public void GPInStatusChanged()
         {
             // Send start reading command
-
             throw new NotImplementedException();
         }
 
