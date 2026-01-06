@@ -38,34 +38,42 @@ namespace ZebraIoTConnector.Services
             if (tagReadEvent == null || tagReadEvent.Count == 0)
                 return;
 
+            logger.LogInformation($"[TagProcess] Processing {tagReadEvent.Count} tags from {clientId}");
+
             // Get reader entity with Gate navigation
             var reader = unitOfWork.EquipmentRepository.GetEquipmentEntityByName(clientId);
             
             if (reader == null)
             {
-                logger.LogWarning($"Reader {clientId} not registered yet, tag read message received before the heartbeat");
+                logger.LogWarning($"[TagProcess] BLOCKED: Reader '{clientId}' not registered yet");
                 return;
             }
+            
+            logger.LogInformation($"[TagProcess] Reader found: ID={reader.Id}, GateId={reader.GateId}");
 
             var gate = reader.Gate;
             
             if (gate == null)
             {
-                logger.LogWarning($"Reader {clientId} is not assigned to a gate");
+                logger.LogWarning($"[TagProcess] BLOCKED: Reader '{clientId}' (ID={reader.Id}) is not assigned to a gate. GateId={reader.GateId}");
                 return;
             }
+            
+            logger.LogInformation($"[TagProcess] Gate found: {gate.Name} (ID={gate.Id}), IsActive={gate.IsActive}, LocationId={gate.LocationId}");
 
             if (!gate.IsActive)
             {
-                logger.LogWarning($"Gate {gate.Name} is not active");
+                logger.LogWarning($"[TagProcess] BLOCKED: Gate '{gate.Name}' is not active");
                 return;
             }
 
             if (gate.Location == null)
             {
-                logger.LogWarning($"Gate {gate.Name} does not have a location configured");
+                logger.LogWarning($"[TagProcess] BLOCKED: Gate '{gate.Name}' does not have a location configured. Set LocationId on this gate!");
                 return;
             }
+            
+            logger.LogInformation($"[TagProcess] PASSED all checks. Processing {tagReadEvent.Count} tags at gate {gate.Name} (Location: {gate.Location.Name})");
 
             // Process each tag
             foreach (var tag in tagReadEvent)
