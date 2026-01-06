@@ -57,6 +57,9 @@ namespace ZebraIoTConnector.Backend.API
             // Reader interface
             services.AddScoped<IFXReaderManager, FXReaderManager>();
 
+            // Singleton Aggregator to buffer tags across requests
+            services.AddSingleton<ITagAggregator, TagAggregator>();
+
             // MQTT Client Service
             services.AddSingleton<IMQTTClientService, MQTTClientService>();
 

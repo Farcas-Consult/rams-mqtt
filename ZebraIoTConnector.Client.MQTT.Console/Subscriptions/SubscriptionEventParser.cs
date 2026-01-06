@@ -43,7 +43,8 @@ namespace ZebraIoTConnector.Client.MQTT.Console.Subscriptions
             var tagDataEventModel = result.Select(x => x.Data).Select(x => new TagReadEvent()
             {
                 Format = x.Format,
-                IdHex = x.IdHex
+                IdHex = x.IdHex,
+                AntennaId = x.Antenna
             }).ToList();
 
             // Await the async call - this keeps the scope alive!

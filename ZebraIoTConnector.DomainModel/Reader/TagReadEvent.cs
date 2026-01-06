@@ -11,5 +11,7 @@ namespace ZebraIoTConnector.DomainModel.Reader
         public string Format { get; set; }
 
         public string IdHex { get; set; }
+        
+        public int AntennaId { get; set; }
     }
 }

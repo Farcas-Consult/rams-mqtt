@@ -39,7 +39,8 @@ namespace ZebraIoTConnector.Persistence.Repositories
 
             return zebraDbContext.Assets
                 .Include(a => a.CurrentLocation)
-                .FirstOrDefault(a => a.TagIdentifier == tagId && !a.IsDeleted);
+                .Include(a => a.Tags)
+                .FirstOrDefault(a => (a.TagIdentifier == tagId || a.Tags.Any(t => t.TagId == tagId)) && !a.IsDeleted);
         }
 
         public IQueryable<Asset> GetAll()

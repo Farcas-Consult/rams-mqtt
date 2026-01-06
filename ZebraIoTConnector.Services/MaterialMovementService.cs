@@ -3,6 +3,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using ZebraIoTConnector.DomainModel.Dto;
 using ZebraIoTConnector.DomainModel.Reader;
 using ZebraIoTConnector.Persistence;
 using ZebraIoTConnector.Persistence.Entities;
@@ -14,23 +16,26 @@ namespace ZebraIoTConnector.Services
         private readonly ILogger<MaterialMovementService> logger;
         private readonly IUnitOfWork unitOfWork;
         private readonly ITagReadNotifier? tagReadNotifier;
-        
-        // Cooldown cache: Key = "TagId:GateId", Value = LastSeenTime
-        // 30 second cooldown for gate scenarios (people walking through)
-        private static readonly ConcurrentDictionary<string, DateTime> _tagCooldownCache = new();
-        private static readonly TimeSpan CooldownPeriod = TimeSpan.FromSeconds(30);
+        private readonly ITagAggregator tagAggregator;
 
         public MaterialMovementService(ILogger<MaterialMovementService> logger, IUnitOfWork unitOfWork)
-            : this(logger, unitOfWork, null)
+            : this(logger, unitOfWork, null, null)
         {
         }
 
-        // Public constructor for dependency injection with notifier
-        public MaterialMovementService(ILogger<MaterialMovementService> logger, IUnitOfWork unitOfWork, ITagReadNotifier? tagReadNotifier)
+        public MaterialMovementService(
+            ILogger<MaterialMovementService> logger, 
+            IUnitOfWork unitOfWork, 
+            ITagReadNotifier? tagReadNotifier,
+            ITagAggregator? tagAggregator)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             this.tagReadNotifier = tagReadNotifier;
+            // Allow null for aggregator in case of legacy DI issues, but simpler to require it if we updated DI.
+            // We assume DI is updated. If not, this might throw if we didn't use valid optional pattern.
+            // But we registered it.
+            this.tagAggregator = tagAggregator!; 
         }
 
         public async Task NewTagReaded(string clientId, List<TagReadEvent> tagReadEvent)
@@ -38,188 +43,165 @@ namespace ZebraIoTConnector.Services
             if (tagReadEvent == null || tagReadEvent.Count == 0)
                 return;
 
-            // FORCE LOG - Console.WriteLine will ALWAYS appear in Docker logs
+            // FORCE LOG
             Console.WriteLine($"=== [TagProcess v2026.01.06] Processing {tagReadEvent.Count} tags from {clientId} ===");
             logger.LogInformation($"[TagProcess] Processing {tagReadEvent.Count} tags from {clientId}");
 
-            // Get reader entity with Gate navigation
             var reader = unitOfWork.EquipmentRepository.GetEquipmentEntityByName(clientId);
             
             if (reader == null)
             {
-                Console.WriteLine($"=== [TagProcess] BLOCKED: Reader '{clientId}' not found ===");
-                logger.LogWarning($"[TagProcess] BLOCKED: Reader '{clientId}' not registered yet");
+                logger.LogWarning($"[TagProcess] BLOCKED: Reader '{clientId}' not registered");
                 return;
             }
-            
-            Console.WriteLine($"=== [TagProcess] Reader found: ID={reader.Id}, Name={reader.Name}, GateId={reader.GateId} ===");
-            logger.LogInformation($"[TagProcess] Reader found: ID={reader.Id}, GateId={reader.GateId}");
 
             var gate = reader.Gate;
-            
-            if (gate == null)
+            if (gate == null || !gate.IsActive || gate.Location == null)
             {
-                logger.LogWarning($"[TagProcess] BLOCKED: Reader '{clientId}' (ID={reader.Id}) is not assigned to a gate. GateId={reader.GateId}");
+                logger.LogWarning($"[TagProcess] BLOCKED: Reader '{clientId}' Gate configuration invalid/inactive");
                 return;
             }
             
-            logger.LogInformation($"[TagProcess] Gate found: {gate.Name} (ID={gate.Id}), IsActive={gate.IsActive}, LocationId={gate.LocationId}");
-
-            if (!gate.IsActive)
-            {
-                logger.LogWarning($"[TagProcess] BLOCKED: Gate '{gate.Name}' is not active");
-                return;
-            }
-
-            if (gate.Location == null)
-            {
-                logger.LogWarning($"[TagProcess] BLOCKED: Gate '{gate.Name}' does not have a location configured. Set LocationId on this gate!");
-                return;
-            }
-            
-            logger.LogInformation($"[TagProcess] PASSED all checks. Processing {tagReadEvent.Count} tags at gate {gate.Name} (Location: {gate.Location.Name})");
-
             // Process each tag
             foreach (var tag in tagReadEvent)
             {
                 try
                 {
-                    // Check cooldown - skip if we've seen this tag at this gate recently
-                    var cooldownKey = $"{tag.IdHex}:{gate.Id}";
-                    if (_tagCooldownCache.TryGetValue(cooldownKey, out var lastSeen))
-                    {
-                        if (DateTime.UtcNow - lastSeen < CooldownPeriod)
-                        {
-                            logger.LogDebug($"Tag {tag.IdHex} at gate {gate.Name} is in cooldown, skipping");
-                            continue;
-                        }
-                    }
-                    
-                    // Update cooldown timestamp
-                    _tagCooldownCache[cooldownKey] = DateTime.UtcNow;
-                    
-                    // Cleanup old entries periodically (every 100 entries, remove stale ones)
-                    if (_tagCooldownCache.Count > 100)
-                    {
-                        CleanupCooldownCache();
-                    }
-                    
-                    // Look up asset by tag identifier (DON'T AUTO-CREATE!)
+                    // Look up asset by tag identifier (checks both Asset.TagIdentifier and Asset.Tags collection)
                     var asset = unitOfWork.AssetRepository.GetByTagIdentifier(tag.IdHex);
                     
                     if (asset == null)
                     {
-                        logger.LogWarning($"Unregistered tag: {tag.IdHex} at gate {gate.Name}");
-                        
-                        // Send SignalR notification for unknown tag
-                        if (tagReadNotifier != null)
-                        {
-                            try
-                            {
-                                var unknownMessage = new
-                                {
-                                    TagId = tag.IdHex,
-                                    AssetNumber = (string?)null,
-                                    AssetName = "Unknown Tag",
-                                    Gate = gate.Name,
-                                    Location = gate.Location?.Name,
-                                    Timestamp = DateTime.UtcNow,
-                                    Plant = (string?)null,
-                                    Status = "Unknown"
-                                };
-                                
-                                await tagReadNotifier.NotifyTagReadAsync(unknownMessage);
-                                logger.LogInformation($"[LiveFeed] Unknown tag {tag.IdHex} notification sent");
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.LogWarning(ex, "Failed to send unknown tag notification");
-                            }
-                        }
+                        // Unknown Tag - Notify immediately (no aggregation needed for unknown)
+                        await HandleUnknownTag(tag, gate);
                         continue;
                     }
 
-                    // Store previous location before updating
-                    var previousLocation = asset.CurrentLocation;
-                    var previousLocationId = asset.CurrentLocationId;
-
-                    // Update asset tracking fields
-                    asset.LastDiscoveredAt = DateTime.UtcNow;
-                    asset.LastDiscoveredBy = gate.Name;
-                    asset.CurrentLocationId = gate.Location.Id;
-                    asset.UpdatedAt = DateTime.UtcNow;
-
-                    // Record movement
-                    var movement = new AssetMovement
+                    // Found Asset - Push to Aggregator
+                    // We need to pass the context.
+                    var context = new TagReadContext
                     {
-                        Asset = asset,
-                        AssetId = asset.Id,
-                        FromLocationId = previousLocationId,
-                        ToLocationId = gate.Location.Id,
-                        GateId = gate.Id,
-                        ReaderId = reader.Id,
-                        ReaderIdString = clientId,
-                        ReadTimestamp = DateTime.UtcNow
+                        AssetId = asset.Id.ToString(), // Using String ID for dictionary key
+                        AssetType = asset.Category ?? "Normal", // Use Category as Type (Container, Vehicle)
+                        EPC = tag.IdHex,
+                        AntennaId = tag.AntennaId,
+                        Timestamp = DateTime.UtcNow,
+                        ReaderId = clientId,
+                        GateId = gate.Id
                     };
 
-                    unitOfWork.AssetMovementRepository.Add(movement);
-
-                    logger.LogInformation($"Asset {asset.AssetNumber} ({asset.Name}) detected at gate {gate.Name}");
-
-                    // Send SignalR message if notifier is available
-                    if (tagReadNotifier != null)
+                    if (tagAggregator != null)
                     {
-                        try
-                        {
-                            var message = new
-                            {
-                                TagId = tag.IdHex,
-                                AssetNumber = asset.AssetNumber,
-                                AssetName = asset.Name,
-                                Gate = gate.Name,
-                                Location = gate.Location?.Name,
-                                Timestamp = DateTime.UtcNow,
-                                Plant = asset.Plant,
-                                Status = "Known"
-                            };
-                            
-                            await tagReadNotifier.NotifyTagReadAsync(message);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogWarning(ex, "Failed to call notifier for tag read");
-                        }
+                        tagAggregator.AddTagRead(context);
+                    }
+                    else
+                    {
+                        // Fallback if aggregator missing (should not happen)
+                        logger.LogError("TagAggregator not injected!");
                     }
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, $"Error processing tag {tag.IdHex} at gate {gate.Name}");
+                    logger.LogError(ex, $"Error processing tag {tag.IdHex}");
                 }
             }
+        }
 
-            // Save all changes
+        private async Task HandleUnknownTag(TagReadEvent tag, Gate gate)
+        {
+            logger.LogWarning($"Unregistered tag: {tag.IdHex} at gate {gate.Name}");
+            if (tagReadNotifier != null)
+            {
+                try
+                {
+                    var unknownMessage = new
+                    {
+                        TagId = tag.IdHex,
+                        AssetName = "Unknown Tag",
+                        Gate = gate.Name,
+                        Location = gate.Location?.Name,
+                        Timestamp = DateTime.UtcNow,
+                        Status = "Unknown"
+                    };
+                    await tagReadNotifier.NotifyTagReadAsync(unknownMessage);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to send unknown tag notification");
+                }
+            }
+        }
+
+        public async Task ProcessValidMovement(AssetMovementRequest request)
+        {
             try
             {
+                if (!int.TryParse(request.AssetId, out int assetIdInt))
+                {
+                    logger.LogError($"Invalid AssetId format: {request.AssetId}");
+                    return;
+                }
+
+                var asset = unitOfWork.AssetRepository.GetById(assetIdInt);
+                if (asset == null) return;
+
+                var gate = unitOfWork.GateRepository.GetById(request.GateId);
+                if (gate == null) return;
+
+                // Update Asset Location
+                var previousLocationId = asset.CurrentLocationId;
+                asset.LastDiscoveredAt = request.Timestamp;
+                asset.LastDiscoveredBy = $"{gate.Name} ({request.ReaderId})";
+                asset.CurrentLocationId = gate.LocationId;
+                asset.UpdatedAt = DateTime.UtcNow;
+
+                // Map Direction String to Enum
+                ZebraIoTConnector.DomainModel.Enums.Direction directionEnum = ZebraIoTConnector.DomainModel.Enums.Direction.None;
+                if (string.Equals(request.Direction, "IN", StringComparison.OrdinalIgnoreCase)) directionEnum = ZebraIoTConnector.DomainModel.Enums.Direction.Inbound;
+                if (string.Equals(request.Direction, "OUT", StringComparison.OrdinalIgnoreCase)) directionEnum = ZebraIoTConnector.DomainModel.Enums.Direction.Outbound;
+
+                // Record Movement in DB
+                var movement = new AssetMovement
+                {
+                    Asset = asset,
+                    AssetId = asset.Id,
+                    FromLocationId = previousLocationId,
+                    ToLocationId = gate.LocationId,
+                    GateId = gate.Id,
+                    ReaderIdString = request.ReaderId,
+                    ReadTimestamp = request.Timestamp,
+                    Direction = directionEnum
+                };
+                
+                // Assuming AssetMovement doesn't have Direction column yet, so just logging it
+                logger.LogInformation($"[Movement] Asset {asset.AssetNumber} ({asset.Name}) moved. Direction: {request.Direction}. Validation: {request.ValidationMessage}");
+
+                unitOfWork.AssetMovementRepository.Add(movement);
                 unitOfWork.SaveChanges();
+
+                // Send Notification
+                if (tagReadNotifier != null)
+                {
+                    var message = new
+                    {
+                        TagId = asset.TagIdentifier, // Primary tag
+                        AssetNumber = asset.AssetNumber,
+                        AssetName = asset.Name,
+                        Gate = gate.Name,
+                        Location = gate.Location?.Name,
+                        Timestamp = request.Timestamp,
+                        Status = "Known",
+                        Direction = request.Direction,
+                        Message = request.ValidationMessage
+                    };
+                    await tagReadNotifier.NotifyTagReadAsync(message);
+                }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, $"Error saving asset movements for reader {clientId}");
-                throw;
-            }
-        }
-        
-        private static void CleanupCooldownCache()
-        {
-            var expiredKeys = _tagCooldownCache
-                .Where(kvp => DateTime.UtcNow - kvp.Value > CooldownPeriod * 2)
-                .Select(kvp => kvp.Key)
-                .ToList();
-                
-            foreach (var key in expiredKeys)
-            {
-                _tagCooldownCache.TryRemove(key, out _);
+                logger.LogError(ex, $"Error processing valid movement for Asset {request.AssetId}");
             }
         }
     }
 }
+
